@@ -1,7 +1,8 @@
 (ns oiiku-mongodb.db
   (:require [monger.core :as mg]
             [monger.collection :as mc]
-            [monger.query :as mq])
+            [monger.query :as mq]
+            bultitude.core)
   (:import [org.bson.types ObjectId]))
 
 (defn connect
@@ -13,6 +14,29 @@
   "Creates a MongoDB ObjectId from a string."
   [id]
   (ObjectId. id))
+
+(defn perform-ensure-index
+  [all]
+  (doseq [[collection indexes] all]
+    (let [attribute (nth indexes 0)
+          opts (nth indexes 1 {})]
+      (mc/ensure-index collection (assoc {} attribute 1) opts))))
+
+(defn ensure-indexes
+  "Creates indexes if they don't exist, by looking for an 'indexes' var
+   in the provided namespaces.
+
+   The 'indexes' var is a map where the keys are collection names and the
+   values are specifications of the index to be made in the form of:
+
+     {\"my-collection\"
+      [\"attribute-name\", {:unique true}]
+      [\"other-attribute\"]}"
+  [namespace-prefix]
+  (let [nses (bultitude.core/namespaces-on-classpath :prefix namespace-prefix)]
+    (doseq [ns nses]
+      (if-let [indexes (ns-resolve ns 'indexes)]
+        (perform-ensure-index @indexes)))))
 
 (defn- stringify-oids
   "Converts all instances of ObjectId into strings."
@@ -45,7 +69,10 @@
        (let [data-str (clojure.walk/stringify-keys data)
              errors (validator data-str)]
          (if (empty? errors)
-           [true (perform-insert collection (processor data-str))]
+           (try
+             [true (perform-insert collection (processor data-str))]
+             (catch com.mongodb.MongoException$DuplicateKey e
+               [false {:base ["Duplicate value not allowed"]}]))
            [false errors])))))
 
 (defn make-find-one

@@ -9,6 +9,10 @@
   (mg/connect!)
   (mg/set-db! (mg/get-db db-name)))
 
+(defn oid
+  "Creates a MongoDB ObjectId from a string."
+  [id]
+  (ObjectId. id))
 
 (defn serialize
   [record]

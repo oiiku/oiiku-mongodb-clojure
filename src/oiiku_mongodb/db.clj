@@ -33,8 +33,9 @@
 
 (defn- perform-insert
   [collection data]
-  (let [data (assoc data :_id (ObjectId.))]
-    (clojure.walk/keywordize-keys (mc/insert-and-return collection data))))
+  (let [data (assoc data :_id (ObjectId.))
+        record (mc/insert-and-return collection data)]
+    (zipmap (map keyword (keys record)) (vals record))))
 
 (defn make-insert
   ([collection validator]

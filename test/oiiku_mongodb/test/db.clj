@@ -116,3 +116,9 @@
     (is (= res {:id (.toString oid-a)
                 :users [(.toString oid-b) (.toString oid-c)]
                 :foo "bar"}))))
+
+(deftest nested-map-with-string-keys
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        [result inserted] (inserter {:foo {"test" 123}})]
+    (is result)
+    (is (= (inserted :foo) {"test" 123}))))

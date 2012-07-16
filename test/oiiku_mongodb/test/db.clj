@@ -1,7 +1,8 @@
 (ns oiiku-mongodb.test.db
   (:require [oiiku-mongodb.db :as db]
             oiiku-mongodb.test-helper)
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:import [org.bson.types ObjectId]))
 
 (db/connect "oiiku-mongodb-tests")
 
@@ -105,3 +106,13 @@
     (is result)
     (is (= (inserted :otherfoo) "bartest"))
     (is (contains? inserted :_id))))
+
+(deftest serializing
+  (let [oid-a (ObjectId.)
+        oid-b (ObjectId.)
+        oid-c (ObjectId.)
+        record {:_id oid-a :users [oid-b oid-c] :foo "bar"}
+        res (db/serialize record)]
+    (is (= res {:id (.toString oid-a)
+                :users [(.toString oid-b) (.toString oid-c)]
+                :foo "bar"}))))

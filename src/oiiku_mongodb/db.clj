@@ -14,12 +14,22 @@
   [id]
   (ObjectId. id))
 
+(defn- stringify-oids
+  "Converts all instances of ObjectId into strings."
+  [map]
+  (clojure.walk/postwalk
+   (fn [x]
+     (if (= (type x) org.bson.types.ObjectId)
+       (.toString x)
+       x))
+   map))
+
 (defn serialize
   [record]
   (-> record
-      (assoc "id" (.toString (record :_id)))
+      (assoc :id (record :_id))
       (dissoc :_id)
-      clojure.walk/stringify-keys))
+      stringify-oids))
 
 (defn- perform-insert
   [collection data]

@@ -18,9 +18,10 @@
 (defn perform-ensure-index
   [all]
   (doseq [[collection indexes] all]
-    (let [attribute (nth indexes 0)
-          opts (nth indexes 1 {})]
-      (mc/ensure-index collection (assoc {} attribute 1) opts))))
+    (mc/ensure-index
+     collection
+     (nth indexes 0)
+     (nth indexes 1 {}))))
 
 (defn ensure-indexes
   "Creates indexes if they don't exist, by looking for an 'indexes' var
@@ -30,8 +31,8 @@
    values are specifications of the index to be made in the form of:
 
      {\"my-collection\"
-      [\"attribute-name\", {:unique true}]
-      [\"other-attribute\"]}"
+      [{:attribute-name 1}, {:unique true}]
+      [{:other-attr 1 :yet-another-attr 2}}"
   [namespace-prefix]
   (let [nses (bultitude.core/namespaces-on-classpath :prefix namespace-prefix)]
     (doseq [ns nses]

@@ -124,7 +124,7 @@
     (is (= (inserted :foo) {"test" 123}))))
 
 (deftest perform-ensure-index
-  (db/perform-ensure-index {"my-coll" ["foo" {:unique true}]})
+  (db/perform-ensure-index {"my-coll" [{:foo 1} {:unique true}]})
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         [result-a inserted-a] (inserter {:foo "test"})
         [result-b inserted-b] (inserter {:foo "test"})]

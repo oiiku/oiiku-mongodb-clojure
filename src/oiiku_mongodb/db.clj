@@ -10,7 +10,8 @@
   (do
     (mg/connect!)
     (mg/set-db! (mg/get-db db-name))
-    mg/*mongodb-connection*))
+    {:connection mg/*mongodb-connection*
+     :db-name db-name}))
 
 (defn oid
   "Creates a MongoDB ObjectId from a string."
@@ -19,7 +20,7 @@
 
 (defn perform-ensure-index
   [conn all]
-  (mg/with-connection conn
+  (mg/with-connection (conn :connection)
     (doseq [[collection indexes] all]
       (mc/ensure-index
        collection
@@ -61,7 +62,7 @@
 
 (defn- perform-insert
   [conn collection data]
-  (mg/with-connection conn
+  (mg/with-connection (conn :connection)
     (let [data (assoc data :_id (ObjectId.))
           record (mc/insert-and-return collection data)]
       (zipmap (map keyword (keys record)) (vals record)))))
@@ -83,20 +84,20 @@
 (defn make-find-one
   [collection]
   (fn [conn q]
-    (mg/with-connection conn
+    (mg/with-connection (conn :connection)
       (if-let [result (mc/find-one-as-map collection q)]
         result))))
 
 (defn make-find-all
   [collection]
   (fn [conn q]
-    (mg/with-connection conn
+    (mg/with-connection (conn :connection)
       (mc/find-maps collection q))))
 
 (defn make-paginate
   [collection]
   (fn [conn query limit offset]
-    (mg/with-connection conn
+    (mg/with-connection (conn :connection)
       (let [count (mc/count collection query)
             documents (mq/with-collection collection
                         (mq/find query)
@@ -108,5 +109,5 @@
 (defn make-delete
   [collection]
   (fn [conn id]
-    (mg/with-connection conn
+    (mg/with-connection (conn :connection)
       (mc/remove-by-id collection id))))

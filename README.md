@@ -4,9 +4,11 @@ A collection of tools for working with MongoDB from Clojure.
 
 ## Connecting
 
-You need to connect. It reuses the singleton connection stuffs from Monger, the underlying MongoDB library.
+We don't use the horrible global singleton of the underlying library. You need to create a connection and pass it to all database operations.
 
-    (oiiku-mongodb.db/connect "name-of-database")
+    (def connection (oiiku-mongodb.db/create-connection "name-of-database"))
+
+It's up to you to make this connection available so that you can pass it to your queries.
 
 
 ## Models

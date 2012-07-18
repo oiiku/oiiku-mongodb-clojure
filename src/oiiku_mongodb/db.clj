@@ -13,6 +13,10 @@
            db (mg/get-db conn db-name)]
        {:conn conn :db db})))
 
+(defn get-db-name
+  "Takes a create-db object and returns the name of its database."
+  [db]
+  (.getName (db :db)))
 
 (defn oid
   "Creates a MongoDB ObjectId from a string."

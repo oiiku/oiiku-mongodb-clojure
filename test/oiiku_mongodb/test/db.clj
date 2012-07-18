@@ -130,3 +130,6 @@
         [result-b inserted-b] (inserter db {:foo "test"})]
     (is result-a)
     (is (not result-b))))
+
+(deftest getting-name
+  (is (= (db/get-db-name db) "oiiku-mongodb-tests")))

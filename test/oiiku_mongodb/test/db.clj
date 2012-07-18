@@ -10,7 +10,7 @@
 (use-fixtures
  :each
  (fn [f]
-   (oiiku-mongodb.test-helper/remove-all-collections conn db)
+   (oiiku-mongodb.test-helper/reset-db conn db)
    (f)))
 
 (deftest inserting

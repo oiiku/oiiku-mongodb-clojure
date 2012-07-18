@@ -2,7 +2,7 @@
   (:require monger.core
             monger.collection))
 
-(defn remove-all-collections
+(defn reset-db
   [conn db]
   (doseq [coll-name (remove
                      (fn [coll-name]

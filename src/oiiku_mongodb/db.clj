@@ -5,13 +5,14 @@
             bultitude.core)
   (:import [org.bson.types ObjectId]))
 
-(defn create-connection
-  ([] (monger.core/connect))
-  ([opts] (monger.core/connect opts)))
-
 (defn create-db
-  [conn db-name]
-  (mg/get-db conn db-name))
+  ([db-name]
+     (create-db db-name {}))
+  ([db-name & opts]
+     (let [conn (apply monger.core/connect opts)
+           db (mg/get-db conn db-name)]
+       {:conn conn :db db})))
+
 
 (defn oid
   "Creates a MongoDB ObjectId from a string."
@@ -19,9 +20,9 @@
   (ObjectId. id))
 
 (defn perform-ensure-index
-  [conn db all]
-  (mg/with-connection conn
-    (mg/with-db db
+  [db all]
+  (mg/with-connection (db :conn)
+    (mg/with-db (db :db)
       (doseq [[collection indexes] all]
         (mc/ensure-index
          collection
@@ -38,11 +39,11 @@
      {\"my-collection\"
       [{:attribute-name 1}, {:unique true}]
       [{:other-attr 1 :yet-another-attr 2}}"
-  [conn db namespace-prefix]
+  [db namespace-prefix]
   (let [nses (bultitude.core/namespaces-on-classpath :prefix namespace-prefix)]
     (doseq [ns nses]
       (if-let [indexes (ns-resolve ns 'indexes)]
-        (perform-ensure-index conn db @indexes)))))
+        (perform-ensure-index db @indexes)))))
 
 (defn- stringify-oids
   "Converts all instances of ObjectId into strings."
@@ -62,9 +63,9 @@
       stringify-oids))
 
 (defn- perform-insert
-  [conn db collection data]
-  (mg/with-connection conn
-    (mg/with-db db
+  [db collection data]
+  (mg/with-connection (db :conn)
+    (mg/with-db (db :db)
       (let [data (assoc data :_id (ObjectId.))
             record (mc/insert-and-return collection data)]
         (zipmap (map keyword (keys record)) (vals record))))))
@@ -73,36 +74,36 @@
   ([collection validator]
      (make-insert collection validator (fn [data] data)))
   ([collection validator processor]
-     (fn [conn db data]
+     (fn [db data]
        (let [data-str (clojure.walk/stringify-keys data)
              errors (validator data-str)]
          (if (empty? errors)
            (try
-             [true (perform-insert conn db collection (processor data-str))]
+             [true (perform-insert db collection (processor data-str))]
              (catch com.mongodb.MongoException$DuplicateKey e
                [false {:base ["Duplicate value not allowed"]}]))
            [false errors])))))
 
 (defn make-find-one
   [collection]
-  (fn [conn db q]
-    (mg/with-connection conn
-      (mg/with-db db
+  (fn [db q]
+    (mg/with-connection (db :conn)
+      (mg/with-db (db :db)
         (if-let [result (mc/find-one-as-map collection q)]
           result)))))
 
 (defn make-find-all
   [collection]
-  (fn [conn db q]
-    (mg/with-connection conn
-      (mg/with-db db
+  (fn [db q]
+    (mg/with-connection (db :conn)
+      (mg/with-db (db :db)
         (mc/find-maps collection q)))))
 
 (defn make-paginate
   [collection]
-  (fn [conn db query limit offset]
-    (mg/with-connection conn
-      (mg/with-db db
+  (fn [db query limit offset]
+    (mg/with-connection (db :conn)
+      (mg/with-db (db :db)
         (let [count (mc/count collection query)
               documents (mq/with-collection collection
                           (mq/find query)
@@ -113,7 +114,7 @@
 
 (defn make-delete
   [collection]
-  (fn [conn db id]
-    (mg/with-connection conn
-      (mg/with-db db
+  (fn [db id]
+    (mg/with-connection (db :conn)
+      (mg/with-db (db :db)
         (mc/remove-by-id collection id)))))

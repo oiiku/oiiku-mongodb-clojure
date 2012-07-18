@@ -4,36 +4,35 @@
   (:use [clojure.test])
   (:import [org.bson.types ObjectId]))
 
-(def conn (db/create-connection))
-(def db (db/create-db conn "oiiku-mongodb-tests"))
+(def db (db/create-db "oiiku-mongodb-tests"))
 
 (use-fixtures
  :each
  (fn [f]
-   (oiiku-mongodb.test-helper/reset-db conn db)
+   (oiiku-mongodb.test-helper/reset-db db)
    (f)))
 
 (deftest inserting
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter conn db {:foo "bar"})]
+        [result inserted] (inserter db {:foo "bar"})]
     (is result)
     (is (= (inserted :foo) "bar"))
     (is (contains? inserted :_id))))
 
 (deftest find-one
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter conn db {:foo "bar"})
+        [result inserted] (inserter db {:foo "bar"})
         finder (db/make-find-one "my-coll")
-        found (finder conn db {:foo "bar"})]
+        found (finder db {:foo "bar"})]
     (is (= inserted found))))
 
 (deftest find-all
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter conn db {:foo "bar"})
-        [result inserted-b] (inserter conn db {:foo "baz"})
-        [result inserted-c] (inserter conn db {:foo "bar"})
+        [result inserted-a] (inserter db {:foo "bar"})
+        [result inserted-b] (inserter db {:foo "baz"})
+        [result inserted-c] (inserter db {:foo "bar"})
         finder (db/make-find-all "my-coll")
-        found (finder conn db {:foo "bar"})]
+        found (finder db {:foo "bar"})]
     (is (= (count found) 2))
     ;; TODO: Don't make the test depend on (unspecified) order
     (is (= (nth found 0) inserted-a))
@@ -41,32 +40,32 @@
 
 (deftest find-one-non-existing
   (let [finder (db/make-find-one "my-coll")
-        found (finder conn db {:foo "bar"})]
+        found (finder db {:foo "bar"})]
     (is (nil? found))))
 
 (deftest deleting
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter conn db {:foo "bar"})
+        [result inserted] (inserter db {:foo "bar"})
         deleter (db/make-delete "my-coll")]
-    (deleter conn db (inserted :_id))
+    (deleter db (inserted :_id))
     (let [finder (db/make-find-one "my-coll")
-          found (finder conn db {:foo "bar"})]
+          found (finder db {:foo "bar"})]
       (is (nil? found)))))
 
 (deftest querying-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter conn db {:foo "bar"})
+        [result inserted] (inserter db {:foo "bar"})
         finder (db/make-find-one "my-coll")
-        found (finder conn db {:_id (inserted :_id)})]
+        found (finder db {:_id (inserted :_id)})]
     (is (= inserted found))))
 
 (deftest querying-in-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter conn db {})
-        [result inserted-b] (inserter conn db {})
-        [result inserted-c] (inserter conn db {})
+        [result inserted-a] (inserter db {})
+        [result inserted-b] (inserter db {})
+        [result inserted-c] (inserter db {})
         finder (db/make-find-all "my-coll")
-        found (finder conn db {:_id {:$in [(inserted-a :_id) (inserted-c :_id)]}})]
+        found (finder db {:_id {:$in [(inserted-a :_id) (inserted-c :_id)]}})]
     (is (= (count found) 2))
     ;; TODO: Don't make the test depend on (unspecified) order
     (is (= (nth found 0) inserted-a))
@@ -74,10 +73,10 @@
 
 (deftest querying-ne-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter conn db {})
-        [result inserted-b] (inserter conn db {})
+        [result inserted-a] (inserter db {})
+        [result inserted-b] (inserter db {})
         finder (db/make-find-all "my-coll")
-        found (finder conn db {:_id {:$ne (inserted-a :_id)}})
+        found (finder db {:_id {:$ne (inserted-a :_id)}})
         ]
     (is (= (count found) 1))
     (is (= (nth found 0) inserted-b))))
@@ -86,7 +85,7 @@
   (let [inserter (db/make-insert
                   "my-coll"
                   (fn [data] {:attrs [(str "test" (data "foo"))]}))
-        [result inserted] (inserter conn db {"foo" "bar"})]
+        [result inserted] (inserter db {"foo" "bar"})]
     (is (not result))
     (is (= inserted {:attrs ["testbar"]}))))
 
@@ -94,7 +93,7 @@
   (let [inserter (db/make-insert
                   "my-coll"
                   (fn [data] {:attrs [(str "test" (data "foo"))]}))
-        [result inserted] (inserter conn db {:foo "bar"})]
+        [result inserted] (inserter db {:foo "bar"})]
     (is (not result))
     (is (= inserted {:attrs ["testbar"]}))))
 
@@ -103,7 +102,7 @@
                   "my-coll"
                   (fn [data])
                   (fn [data] (assoc data :otherfoo (str (data "foo") "test"))))
-        [result inserted] (inserter conn db {:foo "bar"})]
+        [result inserted] (inserter db {:foo "bar"})]
     (is result)
     (is (= (inserted :otherfoo) "bartest"))
     (is (contains? inserted :_id))))
@@ -120,14 +119,14 @@
 
 (deftest nested-map-with-string-keys
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter conn db {:foo {"test" 123}})]
+        [result inserted] (inserter db {:foo {"test" 123}})]
     (is result)
     (is (= (inserted :foo) {"test" 123}))))
 
 (deftest perform-ensure-index
-  (db/perform-ensure-index conn db {"my-coll" [{:foo 1} {:unique true}]})
+  (db/perform-ensure-index db {"my-coll" [{:foo 1} {:unique true}]})
   (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result-a inserted-a] (inserter conn db {:foo "test"})
-        [result-b inserted-b] (inserter conn db {:foo "test"})]
+        [result-a inserted-a] (inserter db {:foo "test"})
+        [result-b inserted-b] (inserter db {:foo "test"})]
     (is result-a)
     (is (not result-b))))

@@ -5,6 +5,14 @@
             bultitude.core)
   (:import [org.bson.types ObjectId]))
 
+(defmacro
+  ^{:private true}
+  with-db
+  [db & body]
+  `(mg/with-connection (~db :conn)
+     (mg/with-db (~db :db)
+       (do ~@body))))
+
 (defn create-db
   ([db-name]
      (create-db db-name {}))
@@ -25,13 +33,12 @@
 
 (defn perform-ensure-index
   [db all]
-  (mg/with-connection (db :conn)
-    (mg/with-db (db :db)
-      (doseq [[collection indexes] all]
-        (mc/ensure-index
-         collection
-         (nth indexes 0)
-         (nth indexes 1 {}))))))
+  (with-db db
+    (doseq [[collection indexes] all]
+      (mc/ensure-index
+       collection
+       (nth indexes 0)
+       (nth indexes 1 {})))))
 
 (defn ensure-indexes
   "Creates indexes if they don't exist, by looking for an 'indexes' var
@@ -68,11 +75,10 @@
 
 (defn- perform-insert
   [db collection data]
-  (mg/with-connection (db :conn)
-    (mg/with-db (db :db)
-      (let [data (assoc data :_id (ObjectId.))
-            record (mc/insert-and-return collection data)]
-        (zipmap (map keyword (keys record)) (vals record))))))
+  (with-db db
+    (let [data (assoc data :_id (ObjectId.))
+          record (mc/insert-and-return collection data)]
+      (zipmap (map keyword (keys record)) (vals record)))))
 
 (defn make-insert
   ([collection validator]
@@ -93,41 +99,36 @@
    used for internal updating that doesn't take user input."
   [collection]
   (fn [db id data]
-    (mg/with-connection (db :conn)
-      (mg/with-db (db :db)
-        (mc/update-by-id collection id data)))))
+    (with-db db
+      (mc/update-by-id collection id data))))
 
 (defn make-find-one
   [collection]
   (fn [db q]
-    (mg/with-connection (db :conn)
-      (mg/with-db (db :db)
-        (if-let [result (mc/find-one-as-map collection q)]
-          result)))))
+    (with-db db
+      (if-let [result (mc/find-one-as-map collection q)]
+        result))))
 
 (defn make-find-all
   [collection]
   (fn [db q]
-    (mg/with-connection (db :conn)
-      (mg/with-db (db :db)
-        (mc/find-maps collection q)))))
+    (with-db db
+      (mc/find-maps collection q))))
 
 (defn make-paginate
   [collection]
   (fn [db query limit offset]
-    (mg/with-connection (db :conn)
-      (mg/with-db (db :db)
-        (let [count (mc/count collection query)
-              documents (mq/with-collection collection
-                          (mq/find query)
-                          (mq/limit limit)
-                          (mq/skip offset))]
-          {:count count
-           :documents documents})))))
+    (with-db db
+      (let [count (mc/count collection query)
+            documents (mq/with-collection collection
+                        (mq/find query)
+                        (mq/limit limit)
+                        (mq/skip offset))]
+        {:count count
+         :documents documents}))))
 
 (defn make-delete
   [collection]
   (fn [db id]
-    (mg/with-connection (db :conn)
-      (mg/with-db (db :db)
-        (mc/remove-by-id collection id)))))
+    (with-db db
+      (mc/remove-by-id collection id))))

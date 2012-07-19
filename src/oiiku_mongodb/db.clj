@@ -88,6 +88,15 @@
                [false {:base ["Duplicate value not allowed"]}]))
            [false errors])))))
 
+(defn make-update-by-id
+  "For now we don't provide validations and processors here. It's only being
+   used for internal updating that doesn't take user input."
+  [collection]
+  (fn [db id data]
+    (mg/with-connection (db :conn)
+      (mg/with-db (db :db)
+        (mc/update-by-id collection id data)))))
+
 (defn make-find-one
   [collection]
   (fn [db q]

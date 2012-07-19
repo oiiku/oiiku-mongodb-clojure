@@ -133,3 +133,13 @@
 
 (deftest getting-name
   (is (= (db/get-db-name db) "oiiku-mongodb-tests")))
+
+(deftest updating
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        updater (db/make-update-by-id "my-coll")
+        finder (db/make-find-one "my-coll")
+        [valid inserted] (inserter db {:foo "bar"})]
+    (updater db (inserted :_id) {:foo "baz"})
+    (is (= ((finder db {:_id (inserted :_id)}) :foo) "baz"))
+    (updater db (inserted :_id) {:test 123})
+    (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))

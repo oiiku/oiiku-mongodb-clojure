@@ -9,9 +9,11 @@
   ^{:private true}
   with-db
   [db & body]
-  `(mg/with-connection (~db :conn)
-     (mg/with-db (~db :db)
+  `(mg/with-connection (:conn ~db)
+     (mg/with-db (:db ~db)
        (do ~@body))))
+
+(defrecord Db [conn db])
 
 (defn create-db
   ([db-name]
@@ -19,12 +21,12 @@
   ([db-name & opts]
      (let [conn (apply monger.core/connect opts)
            db (mg/get-db conn db-name)]
-       {:conn conn :db db})))
+       (Db. conn db))))
 
 (defn get-db-name
   "Takes a create-db object and returns the name of its database."
   [db]
-  (.getName (db :db)))
+  (.getName (:db db)))
 
 (defn oid
   "Creates a MongoDB ObjectId from a string."

@@ -2,7 +2,8 @@
   (:require [monger.core :as mg]
             [monger.collection :as mc]
             [monger.query :as mq]
-            bultitude.core)
+            bultitude.core
+            clojure.walk)
   (:import [org.bson.types ObjectId]))
 
 (defmacro

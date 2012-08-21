@@ -143,3 +143,11 @@
     (is (= ((finder db {:_id (inserted :_id)}) :foo) "baz"))
     (updater db (inserted :_id) {:test 123})
     (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))
+
+(deftest save-updating
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        saver (db/make-save-by-id "my-coll" (fn [data]))
+        [valid inserted] (inserter db {:foo "bar"})
+        [valid updated] (saver db (inserted :_id) {:bar "baz"})]
+    (is (= valid true))
+    (is (= updated {:bar "baz" :_id (inserted :_id)}))))

@@ -29,10 +29,9 @@
   [db]
   (.getName (:db db)))
 
-(defn oid
-  "Creates a MongoDB ObjectId from a string."
-  [id]
-  (ObjectId. id))
+(defmulti oid type)
+(defmethod oid String [id] (ObjectId. id))
+(defmethod oid ObjectId [id] id)
 
 (defn perform-ensure-index
   [db all]
@@ -76,26 +75,44 @@
       (dissoc :_id)
       stringify-oids))
 
-(defn- perform-insert
-  [db collection data]
-  (with-db db
-    (let [data (assoc data :_id (ObjectId.))
-          record (mc/insert-and-return collection data)]
-      (zipmap (map keyword (keys record)) (vals record)))))
+(defn- with-validate
+  [validator data handler]
+  (let [data-str (clojure.walk/stringify-keys data)
+        errors (validator data-str)]
+    (if (empty? errors)
+      (handler data-str)
+      [false errors])))
+
+(defn- perform-save
+  "Will save (create or update/replace) a document, depending on whether
+   or not an id is passed. Returns the result with the attributes as symbols,
+   not strings."
+  ([db collection data]
+     (with-db db
+       (let [record (mc/save-and-return collection data)]
+         (zipmap (map keyword (keys record)) (vals record)))))
+  ([db collection data object-id]
+     (perform-save db collection (assoc data :_id object-id))))
 
 (defn make-insert
   ([collection validator]
      (make-insert collection validator (fn [data] data)))
   ([collection validator processor]
      (fn [db data]
-       (let [data-str (clojure.walk/stringify-keys data)
-             errors (validator data-str)]
-         (if (empty? errors)
+       (with-validate validator data
+         (fn [data-str]
            (try
-             [true (perform-insert db collection (processor data-str))]
+             [true (perform-save db collection (processor data-str))]
              (catch com.mongodb.MongoException$DuplicateKey e
-               [false {:base ["Duplicate value not allowed"]}]))
-           [false errors])))))
+               [false {:base ["Duplicate value not allowed"]}])))))))
+
+(defn make-save-by-id
+  [collection validator]
+  (fn [db id data]
+    (with-db db
+      (with-validate validator data
+        (fn [_]
+          [true (perform-save db collection data (oid id))])))))
 
 (defn make-update-by-id
   "For now we don't provide validations and processors here. It's only being
@@ -134,4 +151,4 @@
   [collection]
   (fn [db id]
     (with-db db
-      (mc/remove-by-id collection id))))
+      (mc/remove-by-id collection (oid id)))))

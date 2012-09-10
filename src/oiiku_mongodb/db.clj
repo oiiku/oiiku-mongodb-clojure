@@ -30,7 +30,9 @@
   (.getName (:db db)))
 
 (defmulti oid type)
-(defmethod oid String [id] (ObjectId. id))
+(defmethod oid String [id]
+  (if (ObjectId/isValid id)
+    (ObjectId. id)))
 (defmethod oid ObjectId [id] id)
 
 (defn perform-ensure-index
@@ -152,3 +154,11 @@
   (fn [db id]
     (with-db db
       (mc/remove-by-id collection (oid id)))))
+
+(defn if-valid-oid
+  "Executes 'then' if oid is valid. Executes 'else' if oid is invalid or
+   'then' returns a falsy value."
+  [the-oid then else]
+  (if-let [the-oid (oid the-oid)]
+    (or (then the-oid) (else))
+    (else)))

@@ -38,3 +38,29 @@
                    (fn [data] (str "test" (data "foo"))))
         errors (validator {"foo" "bar"})]
     (is (= errors {:base ["testbar"]}))))
+
+(deftest chain-runs-until-error-occurs-on-base
+  (let [validator (v/make-validator
+                   (v/chain
+                    (fn [data] nil)
+                    (fn [data] "an error")
+                    (fn [data] "another error")))
+        errors (validator {})]
+    (is (= errors {:base ["an error"]}))))
+
+(deftest chain-runs-until-error-occurs-attr
+  (let [validator (v/make-validator
+                   (v/chain
+                    (fn [data] nil)
+                    (fn [data] {"attr" "err"})
+                    (fn [data] "another error")))
+        errors (validator {})]
+    (is (= errors {:attrs {"attr" ["err"]}}))))
+
+(deftest chain-runs-with-no-errors
+  (let [validator (v/make-validator
+                   (v/chain
+                    (fn [data] nil)
+                    (fn [data] nil)))
+        errors (validator {})]
+    (is (= errors {}))))

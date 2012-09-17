@@ -67,3 +67,14 @@
           (format-errors)
           (compact-base-errors)
           (compact-attr-errors)))))
+
+(defn chain
+  [& validators]
+  (fn
+    chainer
+    ([data] (chainer data validators))
+    ([data validators]
+       (if (not (empty? validators))
+         (if-let [error ((first validators) data)]
+           error
+           (recur data (rest validators)))))))

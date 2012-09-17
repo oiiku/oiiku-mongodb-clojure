@@ -5,8 +5,8 @@
   (fn [data]
     (let [value (data attr)]
       (if (coll? value)
-        (if (empty? value) [attr "can't be blank"])
-        (if (clojure.string/blank? value) [attr "can't be blank"])))))
+        (if (empty? value) {attr "can't be blank"})
+        (if (clojure.string/blank? value) {attr "can't be blank"})))))
 
 (defn validator-only-accept
   [attrs-set]
@@ -15,24 +15,37 @@
       (if (not (empty? faulty-attrs))
         (str "Invalid attributes specified " (apply str (interpose ", " faulty-attrs)))))))
 
-(defn- format-attr-errors
-  [errors result]
-  (if (empty? errors)
+(defn- format-attr-map-errors
+  [result attr-map-errors]
+  (if (empty? attr-map-errors)
     result
-    (let [spec (first errors)
-          field (first spec)
-          error-msg (last spec)]
+    (let [error-map (first attr-map-errors)
+          attr (first error-map)
+          error (last error-map)
+          error-list (result attr [])]
       (recur
-       (rest errors)
-       (assoc result field (if (contains? result field)
-                             (conj (result field) error-msg)
-                             [error-msg]))))))
+       (assoc result attr (if (coll? error)
+                            (into error-list error)
+                            (conj error-list error)))
+       (dissoc attr-map-errors attr)))))
+
+(defn- format-attr-errors
+  "Thurns this:
+     [{\"some-attr\" \"test\" \"lolwut\" [\"hai\" \"thar\"]} {\"lolwut\" \"other\"}]
+
+   into this:
+     {\"some-attr\" [\"test\"] \"lolwut\" [\"hai\" \"thar\" \"other\"]}"
+  ([errors] (format-attr-errors errors {}))
+  ([errors result]
+     (if (empty? errors)
+       result
+       (recur (rest errors) (format-attr-map-errors result (first errors))))))
 
 (defn- format-errors
-  ([errors] (format-errors (group-by coll? errors) {}))
-  ([error-groups result]
-     {:attrs (format-attr-errors (error-groups true) {})
-      :base (error-groups false)}))
+  [errors]
+  (let [error-groups (group-by map? errors)]
+    {:attrs (format-attr-errors (error-groups true))
+     :base (error-groups false)}))
 
 (defn- compact-base-errors
   [errors]

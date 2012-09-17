@@ -115,8 +115,8 @@
      (fn [db id data]
        (with-db db
          (with-validate validator data
-           (fn [_]
-             [true (perform-save db collection (processor data) (oid id))]))))))
+           (fn [data-str]
+             [true (perform-save db collection (processor data-str) (oid id))]))))))
 
 (defn make-update-by-id
   "For now we don't provide validations and processors here. It's only being

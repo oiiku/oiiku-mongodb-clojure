@@ -161,3 +161,26 @@
         [valid updated] (saver db (inserted :_id) {:foo "bar"})]
     (is (= valid true))
     (is (= updated {:foo "bar" :bar "baz" :_id (inserted :_id)}))))
+
+(deftest if-valid-oid-oid-is-valid
+  (let [oid (ObjectId.)
+        result (db/if-valid-oid
+                oid
+                (fn [object-id] object-id)
+                (fn [] "nope" ))]
+    (is (identical? result oid))))
+
+(deftest if-valid-oid-oid-is-invalid
+  (let [result (db/if-valid-oid
+                "123"
+                (fn [object-id] object-id)
+                (fn [] "nope" ))]
+    (is (= result "nope"))))
+
+(deftest if-valid-oid-oid-is-valid-but-then-is-nil
+(let [oid (ObjectId.)
+      result (db/if-valid-oid
+              oid
+              (fn [object-id])
+              (fn [] "nope" ))]
+    (is (= result "nope"))))

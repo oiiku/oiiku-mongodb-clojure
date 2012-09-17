@@ -83,6 +83,8 @@
       (handler data-str)
       [false errors])))
 
+(def ^:private identity-processor (fn [data] data))
+
 (defn- perform-save
   "Will save (create or update/replace) a document, depending on whether
    or not an id is passed. Returns the result with the attributes as symbols,
@@ -96,7 +98,7 @@
 
 (defn make-insert
   ([collection validator]
-     (make-insert collection validator (fn [data] data)))
+     (make-insert collection validator identity-processor))
   ([collection validator processor]
      (fn [db data]
        (with-validate validator data
@@ -107,12 +109,14 @@
                [false {:base ["Duplicate value not allowed"]}])))))))
 
 (defn make-save-by-id
-  [collection validator]
-  (fn [db id data]
-    (with-db db
-      (with-validate validator data
-        (fn [_]
-          [true (perform-save db collection data (oid id))])))))
+  ([collection validator]
+     (make-save-by-id collection validator identity-processor))
+  ([collection validator processor]
+     (fn [db id data]
+       (with-db db
+         (with-validate validator data
+           (fn [_]
+             [true (perform-save db collection (processor data) (oid id))]))))))
 
 (defn make-update-by-id
   "For now we don't provide validations and processors here. It's only being

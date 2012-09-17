@@ -144,10 +144,20 @@
     (updater db (inserted :_id) {:test 123})
     (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))
 
-(deftest save-updating
+(deftest save-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         saver (db/make-save-by-id "my-coll" (fn [data]))
         [valid inserted] (inserter db {:foo "bar"})
         [valid updated] (saver db (inserted :_id) {:bar "baz"})]
     (is (= valid true))
     (is (= updated {:bar "baz" :_id (inserted :_id)}))))
+
+(deftest save-by-id-with-processor
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        saver (db/make-save-by-id "my-coll"
+                                  (fn [data])
+                                  (fn [data] {:bar "baz" :foo (data :foo)}))
+        [valid inserted] (inserter db {})
+        [valid updated] (saver db (inserted :_id) {:foo "bar"})]
+    (is (= valid true))
+    (is (= updated {:foo "bar" :bar "baz" :_id (inserted :_id)}))))

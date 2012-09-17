@@ -156,7 +156,7 @@
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         saver (db/make-save-by-id "my-coll"
                                   (fn [data])
-                                  (fn [data] {:bar "baz" :foo (data :foo)}))
+                                  (fn [data] {:bar "baz" :foo (data "foo")}))
         [valid inserted] (inserter db {})
         [valid updated] (saver db (inserted :_id) {:foo "bar"})]
     (is (= valid true))

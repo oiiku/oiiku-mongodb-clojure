@@ -34,11 +34,11 @@
      [{\"some-attr\" \"test\" \"lolwut\" [\"hai\" \"thar\"]} {\"lolwut\" \"other\"}]
 
    into this:
-     {\"some-attr\" [\"test\"] \"lolwut\" [\"hai\" \"thar\" \"other\"]}"
+     {\"some-attr\" {\"base\" [\"test\"]} \"lolwut\" {\"base\" [\"hai\" \"thar\" \"other\"]}}"
   ([errors] (format-attr-errors errors {}))
   ([errors result]
      (if (empty? errors)
-       result
+       (zipmap (keys result) (map (fn [r] {"base" r}) (vals result)))
        (recur (rest errors) (format-attr-map-errors result (first errors))))))
 
 (defn- format-errors

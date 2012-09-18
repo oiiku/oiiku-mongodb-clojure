@@ -6,7 +6,7 @@
   (let [validator (v/make-validator
                    (fn [data] {"some-attr" (str "test" (data "foo"))}))
         errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" ["testbar"]}}))))
+    (is (= errors {:attrs {"some-attr" {"base" ["testbar"]}}}))))
 
 (deftest validator-with-multiple-attribute-errors
   (let [validator (v/make-validator
@@ -14,24 +14,24 @@
                    (fn [data] {"some-attr" (str "test2" (data "foo"))})
                    (fn [data] {"other-attr" (str "test3" (data "foo"))}))
         errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" ["testbar" "test2bar"]
-                           "other-attr" ["test3bar"]}}))))
+    (is (= errors {:attrs {"some-attr" {"base" ["testbar" "test2bar"]}
+                           "other-attr" {"base" ["test3bar"]}}}))))
 
 (deftest validator-with-attr-errors-for-multiple-attrs
   (let [validator (v/make-validator
                    (fn [data] {"some-attr" "test" "lolwut" "hai"})
                    (fn [data] {"lolwut" "other"}))
         errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" ["test"]
-                           "lolwut" ["hai" "other"]}}))))
+    (is (= errors {:attrs {"some-attr" {"base" ["test"]}
+                           "lolwut" {"base" ["hai" "other"]}}}))))
 
 (deftest validator-with-multiple-attr-errors-for-one-attr
   (let [validator (v/make-validator
                    (fn [data] {"some-attr" "test" "lolwut" ["hai" "thar"]})
                    (fn [data] {"lolwut" "other"}))
         errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" ["test"]
-                           "lolwut" ["hai" "thar" "other"]}}))))
+    (is (= errors {:attrs {"some-attr" {"base" ["test"]}
+                           "lolwut" {"base" ["hai" "thar" "other"]}}}))))
 
 (deftest validator-with-one-base-error
   (let [validator (v/make-validator
@@ -55,7 +55,7 @@
                     (fn [data] {"attr" "err"})
                     (fn [data] "another error")))
         errors (validator {})]
-    (is (= errors {:attrs {"attr" ["err"]}}))))
+    (is (= errors {:attrs {"attr" {"base" ["err"]}}}))))
 
 (deftest chain-runs-with-no-errors
   (let [validator (v/make-validator

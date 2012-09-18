@@ -4,5 +4,5 @@
                  [com.novemberain/monger "1.1.0"]
                  [bultitude "0.1.7"]]
   :deploy-repositories
-  {"releases" "http://augustl.com:8081/nexus/content/repositories/releases"
-   "snapshots" "http://augustl.com:8081/nexus/content/repositories/snapshots"})
+  {"releases" {:url "http://augustl.com:8081/nexus/content/repositories/releases"}
+   "snapshots" {:url "http://augustl.com:8081/nexus/content/repositories/snapshots"}})

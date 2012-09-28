@@ -2,65 +2,37 @@
   (:require [oiiku-mongodb.validator :as v])
   (:use [clojure.test]))
 
-(deftest validator-with-one-attribute-error
-  (let [validator (v/make-validator
-                   (fn [data] {"some-attr" (str "test" (data "foo"))}))
-        errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" {"base" ["testbar"]}}}))))
+(deftest single-validator-not-returning-any-error
+  (let [validator (v/validator
+                   (fn [data]))]
+    (is (nil? (validator {})))
+    (is (nil? (validator {:foo "bar"})))))
 
-(deftest validator-with-multiple-attribute-errors
-  (let [validator (v/make-validator
-                   (fn [data] {"some-attr" (str "test" (data "foo"))})
-                   (fn [data] {"some-attr" (str "test2" (data "foo"))})
-                   (fn [data] {"other-attr" (str "test3" (data "foo"))}))
-        errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" {"base" ["testbar" "test2bar"]}
-                           "other-attr" {"base" ["test3bar"]}}}))))
+(deftest single-validator-returning-errors-on-base
+  (let [validator (v/validator
+                   (fn [data] {:base ["Has an error"]}))]
+    (is (= (validator {}) {:base ["Has an error"]}))))
 
-(deftest validator-with-attr-errors-for-multiple-attrs
-  (let [validator (v/make-validator
-                   (fn [data] {"some-attr" "test" "lolwut" "hai"})
-                   (fn [data] {"lolwut" "other"}))
-        errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" {"base" ["test"]}
-                           "lolwut" {"base" ["hai" "other"]}}}))))
+(deftest single-validator-returning-errors-on-attr
+  (let [validator (v/validator
+                   (fn [data] {:attr {:name ["Has an error"]}}))]
+    (is (= (validator {}) {:attr {:name ["Has an error"]}}))))
 
-(deftest validator-with-multiple-attr-errors-for-one-attr
-  (let [validator (v/make-validator
-                   (fn [data] {"some-attr" "test" "lolwut" ["hai" "thar"]})
-                   (fn [data] {"lolwut" "other"}))
-        errors (validator {"foo" "bar"})]
-    (is (= errors {:attrs {"some-attr" {"base" ["test"]}
-                           "lolwut" {"base" ["hai" "thar" "other"]}}}))))
+(deftest multiple-validators-returning-errors-on-base
+  (let [validator (v/validator
+                   (fn [data] {:base ["Has an error"]})
+                   (fn [data] {:base ["Has more errors"]}))]
+    (is (= (validator {}) {:base ["Has an error" "Has more errors"]}))))
 
-(deftest validator-with-one-base-error
-  (let [validator (v/make-validator
-                   (fn [data] (str "test" (data "foo"))))
-        errors (validator {"foo" "bar"})]
-    (is (= errors {:base ["testbar"]}))))
-
-(deftest chain-runs-until-error-occurs-on-base
-  (let [validator (v/make-validator
-                   (v/chain
-                    (fn [data] nil)
-                    (fn [data] "an error")
-                    (fn [data] "another error")))
-        errors (validator {})]
-    (is (= errors {:base ["an error"]}))))
-
-(deftest chain-runs-until-error-occurs-attr
-  (let [validator (v/make-validator
-                   (v/chain
-                    (fn [data] nil)
-                    (fn [data] {"attr" "err"})
-                    (fn [data] "another error")))
-        errors (validator {})]
-    (is (= errors {:attrs {"attr" {"base" ["err"]}}}))))
-
-(deftest chain-runs-with-no-errors
-  (let [validator (v/make-validator
-                   (v/chain
-                    (fn [data] nil)
-                    (fn [data] nil)))
-        errors (validator {})]
-    (is (= errors {}))))
+(deftest multiple-validators-returning-errors-on-base-and-attr
+  (let [validator (v/validator
+                   (fn [data] {:base ["Has an error"]})
+                   (fn [data] {:base ["Has more errors"]})
+                   (fn [data] {:attr {:name ["can't be blank"]}})
+                   (fn [data] {:attr {:name ["not an e-mail"] :age ["not a number"]}})
+                   (fn [data] {:attr {:email ["not a valid e-mail"]}
+                               :base ["Yet another error"]}))]
+    (is (= (validator {}) {:base ["Has an error" "Has more errors" "Yet another error"]
+                           :attr {:name ["can't be blank" "not an e-mail"]
+                                  :age ["not a number"]
+                                  :email ["not a valid e-mail"]}}))))

@@ -5,6 +5,10 @@
   [attr err]
   {:attr {attr [err]}})
 
+(defn base-err
+  [err]
+  {:base [err]})
+
 (defn validate-non-empty-string
   [attr]
   (fn [data]
@@ -19,9 +23,10 @@
   (let [attrs (set attrs)]
     (fn [data]
       (let [provided-attrs (set (keys data))
-            extraneous-attrs (clojure.set/difference attrs provided-attrs)]
+            extraneous-attrs (clojure.set/difference provided-attrs attrs)]
         (if (not (empty? extraneous-attrs))
-          (str "Unknown attributes " (apply str (interpose ", " extraneous-attrs))))))))
+          (base-err (str "Unknown attributes: "
+                         (apply str (interpose ", " (map name extraneous-attrs))))))))))
 
 (defn- merge-base-errors
   [result error]

@@ -14,6 +14,13 @@
   (fn [data]
     (some #(% data) validators)))
 
+(defn validate-record
+  [attr validator]
+  (fn [data]
+    (if-let [record (attr data)]
+      (if-let [errors (validator record)]
+        {:attr {attr errors}}))))
+
 (defn validate-non-empty-string
   [attr]
   (fn [data]
@@ -39,10 +46,19 @@
     (assoc result :base (into (:base result) new-error))
     result))
 
+(defn- concat-attr-error
+  [x y]
+  (if (and (not (map? x)) (map? y))
+    (assoc y :base x)
+    (if (map? x)
+      (assoc x :base (concat (:base x) y))
+      (concat x y))))
+
 (defn- merge-attr-errors
   [result error]
-  (if (contains? error :attr)
-    (assoc result :attr (merge-with concat (:attr result) (:attr error)))
+  (if-let [new-error (:attr error)]
+    (let [existing-error (:attr result)]
+      (assoc result :attr (merge-with concat-attr-error existing-error new-error)))
     result))
 
 (defn- merge-error

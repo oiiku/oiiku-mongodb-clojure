@@ -77,3 +77,25 @@
     (is (= @my-ref 2))
     (is (= (:base (validator {:baz 1})) ["baz"]))
     (is (= @my-ref 3))))
+
+(deftest validate-record
+  (let [dynamic-attrs-validator (v/validator
+                                 (v/validate-non-empty-string :name))
+        validator (v/validator
+                   (v/validate-record :dynamic-attrs dynamic-attrs-validator))]
+    (is (nil? (validator {})))
+    (is (nil? (validator {:dynamic-attrs nil})))
+    (is (nil? (validator {:dynamic-attrs {:name "foo"}})))
+    (is (not (empty? (get-in (validator {:dynamic-attrs {:name ""}})
+                             [:attr :dynamic-attrs :attr :name]))))))
+
+(deftest validate-with-other-validators-before-and-after
+  (let [dynamic-attrs-validator (v/validator
+                                 (fn [data] (v/attr-err :name "can't be blank")))
+        validator (v/validator
+                   (fn [data] (v/attr-err :dynamic-attrs "will blow up"))
+                   (v/validate-record :dynamic-attrs dynamic-attrs-validator)
+                   (fn [data] (v/attr-err :dynamic-attrs "blew up")))]
+    (is (= (validator {:dynamic-attrs {}})
+           {:attr {:dynamic-attrs {:base ["will blow up" "blew up"]
+                                   :attr {:name ["can't be blank"]}}}}))))

@@ -110,3 +110,14 @@
     (is (nil? (validator {:auth-tokens [{:token "123"}]})))
     (is (not (empty? (get-in (validator {:auth-tokens [{:token ""}]})
                              [:attr :auth-tokens 0 :attr :token]))))))
+
+(deftest validate-record-list-with-other-validators-before-and-after
+  (let [auth-token-validator (v/validator
+                              (fn [data] (v/attr-err :token "is too short")))
+        validator (v/validator
+                   (fn [data] (v/attr-err :auth-tokens "will blow up"))
+                   (v/validate-record-list :auth-tokens auth-token-validator)
+                   (fn [data] (v/attr-err :auth-tokens "blew up")))]
+    (is (= (validator {:auth-tokens [{}]})
+           {:attr {:auth-tokens {:base ["will blow up" "blew up"]
+                                 :attr {0 {:attr {:token ["is too short"]}}}}}}))))

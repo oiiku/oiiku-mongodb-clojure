@@ -19,7 +19,7 @@
   (fn [data]
     (if-let [record (attr data)]
       (if-let [errors (validator record)]
-        {:attr {attr errors}}))))
+        {:attr {attr (assoc errors :_type :record-errors)}}))))
 
 (defn- map-without-values
   [pred map]
@@ -48,7 +48,7 @@
                (range (count records)))
               errors-map (map-without-values #(not (nil? %)) all-errors-map)]
           (if (not (empty? errors-map))
-            {:attr {attr errors-map}}))))))
+            {:attr {attr (assoc errors-map :_type :record-list-errors)}}))))))
 
 (defn validate-non-empty-string
   [attr]
@@ -75,10 +75,16 @@
     (assoc result :base (into (:base result) new-error))
     result))
 
+(defmulti concat-record-type-errors (fn [x y] (:_type y)))
+(defmethod concat-record-type-errors :record-errors
+  [x y] (assoc (dissoc y :_type) :base x))
+(defmethod concat-record-type-errors :record-list-errors
+  [x y] {:attr (dissoc y :_type) :base x})
+
 (defn- concat-attr-error
   [x y]
   (if (and (not (map? x)) (map? y))
-    (assoc y :base x)
+    (concat-record-type-errors x y)
     (if (map? x)
       (assoc x :base (concat (:base x) y))
       (concat x y))))

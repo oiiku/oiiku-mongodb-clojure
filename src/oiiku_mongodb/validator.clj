@@ -35,8 +35,8 @@
 
 (defn- merge-base-errors
   [result error]
-  (if (contains? error :base)
-    (assoc result :base (into (:base result) (:base error)))
+  (if-let [new-error (:base error)]
+    (assoc result :base (into (:base result) new-error))
     result))
 
 (defn- merge-attr-errors

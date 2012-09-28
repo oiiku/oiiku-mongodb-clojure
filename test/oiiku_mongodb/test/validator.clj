@@ -15,8 +15,8 @@
 
 (deftest single-validator-returning-errors-on-attr
   (let [validator (v/validator
-                   (fn [data] {:attr {:name ["Has an error"]}}))]
-    (is (= (validator {}) {:attr {:name ["Has an error"]}}))))
+                   (fn [data] {:attrs {:name ["Has an error"]}}))]
+    (is (= (validator {}) {:attrs {:name ["Has an error"]}}))))
 
 (deftest multiple-validators-returning-errors-on-base
   (let [validator (v/validator
@@ -28,12 +28,12 @@
   (let [validator (v/validator
                    (fn [data] {:base ["Has an error"]})
                    (fn [data] {:base ["Has more errors"]})
-                   (fn [data] {:attr {:name ["can't be blank"]}})
-                   (fn [data] {:attr {:name ["not an e-mail"] :age ["not a number"]}})
-                   (fn [data] {:attr {:email ["not a valid e-mail"]}
+                   (fn [data] {:attrs {:name ["can't be blank"]}})
+                   (fn [data] {:attrs {:name ["not an e-mail"] :age ["not a number"]}})
+                   (fn [data] {:attrs {:email ["not a valid e-mail"]}
                                :base ["Yet another error"]}))]
     (is (= (validator {}) {:base ["Has an error" "Has more errors" "Yet another error"]
-                           :attr {:name ["can't be blank" "not an e-mail"]
+                           :attrs {:name ["can't be blank" "not an e-mail"]
                                   :age ["not a number"]
                                   :email ["not a valid e-mail"]}}))))
 
@@ -68,7 +68,7 @@
     (is (nil? (validator {:dynamic-attrs nil})))
     (is (nil? (validator {:dynamic-attrs {:name "foo"}})))
     (is (not (empty? (get-in (validator {:dynamic-attrs {:name ""}})
-                             [:attr :dynamic-attrs :attr :name]))))))
+                             [:attrs :dynamic-attrs :attrs :name]))))))
 
 (deftest validate-record-with-other-validators-before-and-after
   (let [dynamic-attrs-validator (v/validator
@@ -78,8 +78,8 @@
                    (v/validate-record :dynamic-attrs dynamic-attrs-validator)
                    (fn [data] (v/attr-err :dynamic-attrs "blew up")))]
     (is (= (validator {:dynamic-attrs {}})
-           {:attr {:dynamic-attrs {:base ["will blow up" "blew up"]
-                                   :attr {:name ["can't be blank"]}}}}))))
+           {:attrs {:dynamic-attrs {:base ["will blow up" "blew up"]
+                                   :attrs {:name ["can't be blank"]}}}}))))
 
 (deftest validate-record-list
   (let [auth-token-validator (v/validator
@@ -90,7 +90,7 @@
     (is (nil? (validator {:auth-tokens []})))
     (is (nil? (validator {:auth-tokens [{:token "123"}]})))
     (is (not (empty? (get-in (validator {:auth-tokens [{:token ""}]})
-                             [:attr :auth-tokens 0 :attr :token]))))))
+                             [:attrs :auth-tokens 0 :attrs :token]))))))
 
 (deftest validate-record-list-with-other-validators-before-and-after
   (let [auth-token-validator (v/validator
@@ -100,5 +100,5 @@
                    (v/validate-record-list :auth-tokens auth-token-validator)
                    (fn [data] (v/attr-err :auth-tokens "blew up")))]
     (is (= (validator {:auth-tokens [{}]})
-           {:attr {:auth-tokens {:base ["will blow up" "blew up"]
-                                 :attr {0 {:attr {:token ["is too short"]}}}}}}))))
+           {:attrs {:auth-tokens {:base ["will blow up" "blew up"]
+                                 :attrs {0 {:attrs {:token ["is too short"]}}}}}}))))

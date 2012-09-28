@@ -6,10 +6,10 @@
   (let [validator (v/validator
                    (v/validate-non-empty-string :name))]
     (is (nil? (validator {:name "A non-empty string"})))
-    (is (not (empty? (get-in (validator {:name ""}) [:attr :name]))))
-    (is (not (empty? (get-in (validator {:name nil}) [:attr :name]))))
-    (is (not (empty? (get-in (validator {:name 123}) [:attr :name]))))
-    (is (not (empty? (get-in (validator {}) [:attr :name]))))))
+    (is (not (empty? (get-in (validator {:name ""}) [:attrs :name]))))
+    (is (not (empty? (get-in (validator {:name nil}) [:attrs :name]))))
+    (is (not (empty? (get-in (validator {:name 123}) [:attrs :name]))))
+    (is (not (empty? (get-in (validator {}) [:attrs :name]))))))
 
 (deftest validate-only-accept
   (let [validator (v/validator
@@ -31,5 +31,5 @@
     (is (nil? (validator {:name #{}})))
     (is (nil? (validator {:name '()})))
     (is (nil? (validator {:name {}})))
-    (is (not (empty? (get-in (validator {}) [:attr :name]))))
-    (is (not (empty? (get-in (validator {:cake 123}) [:attr :name]))))))
+    (is (not (empty? (get-in (validator {}) [:attrs :name]))))
+    (is (not (empty? (get-in (validator {:cake 123}) [:attrs :name]))))))

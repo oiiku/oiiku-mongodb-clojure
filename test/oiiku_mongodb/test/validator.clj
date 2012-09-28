@@ -99,3 +99,14 @@
     (is (= (validator {:dynamic-attrs {}})
            {:attr {:dynamic-attrs {:base ["will blow up" "blew up"]
                                    :attr {:name ["can't be blank"]}}}}))))
+
+(deftest validate-record-list
+  (let [auth-token-validator (v/validator
+                              (v/validate-non-empty-string :token))
+        validator (v/validator
+                   (v/validate-record-list :auth-tokens auth-token-validator))]
+    (is (nil? (validator {})))
+    (is (nil? (validator {:auth-tokens []})))
+    (is (nil? (validator {:auth-tokens [{:token "123"}]})))
+    (is (not (empty? (get-in (validator {:auth-tokens [{:token ""}]})
+                             [:attr :auth-tokens 0 :attr :token]))))))

@@ -21,6 +21,35 @@
       (if-let [errors (validator record)]
         {:attr {attr errors}}))))
 
+(defn- map-without-values
+  [pred map]
+  (persistent!
+   (reduce
+    (fn [result entry]
+      (let [key (first entry)
+            value (last entry)]
+        (if (pred value)
+          (assoc! result key value)
+          result)))
+    (transient {})
+    map)))
+
+(defn validate-record-list
+  [attr validator]
+  (fn [data]
+    (if-let [records (attr data)]
+      (if (and (sequential? records)
+               (not (empty? records)))
+        (let [all-errors-map
+              (reduce
+               (fn [result idx]
+                 (assoc result idx (validator (nth records idx))))
+               {}
+               (range (count records)))
+              errors-map (map-without-values #(not (nil? %)) all-errors-map)]
+          (if (not (empty? errors-map))
+            {:attr {attr errors-map}}))))))
+
 (defn validate-non-empty-string
   [attr]
   (fn [data]

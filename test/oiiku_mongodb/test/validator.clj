@@ -55,3 +55,25 @@
     (is (nil? (validator {:age 123})))
     (is (not (empty? (:base (validator {:cake 123})))))
     (is (not (empty? (:base (validator {:cake 123 :name "foo"})))))))
+
+(deftest chain-validator
+  (let [my-ref (ref nil)
+        validator (v/validator
+                   (v/chain
+                    (fn [data] (if (contains? data :foo)
+                                 (do (dosync (ref-set my-ref 1))
+                                     (v/base-err "foo"))))
+                    (fn [data] (if (contains? data :bar)
+                                 (do (dosync (ref-set my-ref 2))
+                                     (v/base-err "bar"))))
+                    (fn [data] (if (contains? data :baz)
+                                 (do (dosync (ref-set my-ref 3))
+                                     (v/base-err "baz"))))))]
+    (is (nil? (validator {})))
+    (is (= @my-ref nil))
+    (is (= (:base (validator {:foo 1})) ["foo"]))
+    (is (= @my-ref 1))
+    (is (= (:base (validator {:bar 1})) ["bar"]))
+    (is (= @my-ref 2))
+    (is (= (:base (validator {:baz 1})) ["baz"]))
+    (is (= @my-ref 3))))

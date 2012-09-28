@@ -9,6 +9,11 @@
   [err]
   {:base [err]})
 
+(defn chain
+  [& validators]
+  (fn [data]
+    (some #(% data) validators)))
+
 (defn validate-non-empty-string
   [attr]
   (fn [data]

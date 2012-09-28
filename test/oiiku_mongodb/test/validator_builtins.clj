@@ -20,3 +20,16 @@
     (is (nil? (validator {:age 123})))
     (is (not (empty? (:base (validator {:cake 123})))))
     (is (not (empty? (:base (validator {:cake 123 :name "foo"})))))))
+
+
+(deftest validate-presence
+  (let [validator (v/validator
+                   (v/validate-presence :name))]
+    (is (nil? (validator {:name nil})))
+    (is (nil? (validator {:name false})))
+    (is (nil? (validator {:name 0})))
+    (is (nil? (validator {:name #{}})))
+    (is (nil? (validator {:name '()})))
+    (is (nil? (validator {:name {}})))
+    (is (not (empty? (get-in (validator {}) [:attr :name]))))
+    (is (not (empty? (get-in (validator {:cake 123}) [:attr :name]))))))

@@ -59,6 +59,12 @@
         (attr-err attr "must contain something other than blank spaces"))
       (attr-err attr "must be non-nil"))))
 
+(defn validate-presence
+  [attr]
+  (fn [data]
+    (if (not (contains? data attr))
+      (attr-err attr "must be set"))))
+
 (defn validate-only-accept
   [& attrs]
   (let [attrs (set attrs)]

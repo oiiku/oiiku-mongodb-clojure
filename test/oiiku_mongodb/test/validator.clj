@@ -89,7 +89,7 @@
     (is (not (empty? (get-in (validator {:dynamic-attrs {:name ""}})
                              [:attr :dynamic-attrs :attr :name]))))))
 
-(deftest validate-with-other-validators-before-and-after
+(deftest validate-record-with-other-validators-before-and-after
   (let [dynamic-attrs-validator (v/validator
                                  (fn [data] (v/attr-err :name "can't be blank")))
         validator (v/validator

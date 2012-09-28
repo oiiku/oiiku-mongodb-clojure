@@ -84,15 +84,15 @@
 (deftest failing-validation-with-errors
   (let [inserter (db/make-insert
                   "my-coll"
-                  (fn [data] {:attrs [(str "test" (data "foo"))]}))
-        [result inserted] (inserter db {"foo" "bar"})]
+                  (fn [data] {:attrs [(str "test" (data :foo))]}))
+        [result inserted] (inserter db {:foo "bar"})]
     (is (not result))
     (is (= inserted {:attrs ["testbar"]}))))
 
 (deftest validator-gets-attrs-with-stringified-keys
   (let [inserter (db/make-insert
                   "my-coll"
-                  (fn [data] {:attrs [(str "test" (data "foo"))]}))
+                  (fn [data] {:attrs [(str "test" (data :foo))]}))
         [result inserted] (inserter db {:foo "bar"})]
     (is (not result))
     (is (= inserted {:attrs ["testbar"]}))))
@@ -101,7 +101,7 @@
   (let [inserter (db/make-insert
                   "my-coll"
                   (fn [data])
-                  (fn [data] (assoc data :otherfoo (str (data "foo") "test"))))
+                  (fn [data] (assoc data :otherfoo (str (data :foo) "test"))))
         [result inserted] (inserter db {:foo "bar"})]
     (is result)
     (is (= (inserted :otherfoo) "bartest"))
@@ -156,7 +156,7 @@
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         saver (db/make-save-by-id "my-coll"
                                   (fn [data])
-                                  (fn [data] {:bar "baz" :foo (data "foo")}))
+                                  (fn [data] {:bar "baz" :foo (data :foo)}))
         [valid inserted] (inserter db {})
         [valid updated] (saver db (inserted :_id) {:foo "bar"})]
     (is (= valid true))

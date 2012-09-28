@@ -79,10 +79,9 @@
 
 (defn- with-validate
   [validator data handler]
-  (let [data-str (clojure.walk/stringify-keys data)
-        errors (validator data-str)]
+  (let [errors (validator data)]
     (if (empty? errors)
-      (handler data-str)
+      (handler)
       [false errors])))
 
 (def ^:private identity-processor (fn [data] data))
@@ -104,9 +103,9 @@
   ([collection validator processor]
      (fn [db data]
        (with-validate validator data
-         (fn [data-str]
+         (fn []
            (try
-             [true (perform-save db collection (processor data-str))]
+             [true (perform-save db collection (processor data))]
              (catch com.mongodb.MongoException$DuplicateKey e
                [false {:base ["Duplicate value not allowed"]}])))))))
 
@@ -117,8 +116,8 @@
      (fn [db id data]
        (with-db db
          (with-validate validator data
-           (fn [data-str]
-             [true (perform-save db collection (processor data-str) (oid id))]))))))
+           (fn []
+             [true (perform-save db collection (processor data) (oid id))]))))))
 
 (defn make-update-by-id
   "For now we don't provide validations and processors here. It's only being

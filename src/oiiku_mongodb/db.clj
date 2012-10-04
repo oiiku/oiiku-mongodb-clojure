@@ -2,6 +2,7 @@
   (:require [monger.core :as mg]
             [monger.collection :as mc]
             [monger.query :as mq]
+            monger.conversion
             bultitude.core
             clojure.walk)
   (:import [org.bson.types ObjectId]))
@@ -97,6 +98,16 @@
   ([db collection data object-id]
      (perform-save db collection (assoc data :_id object-id))))
 
+(defn- perform-upsert
+  [db collection criteria data]
+  (with-db db
+    (mc/update collection criteria data :upsert true)))
+
+(defn make-upsert
+  [collection]
+  (fn [db criteria data]
+    (perform-upsert db collection criteria data)))
+
 (defn make-insert
   ([collection validator]
      (make-insert collection validator identity-processor))
@@ -151,6 +162,12 @@
                         (mq/skip offset))]
         {:count count
          :documents documents}))))
+
+(defn make-count
+  [collection]
+  (fn [db]
+    (with-db db
+      (mc/count collection))))
 
 (defn make-delete
   [collection]

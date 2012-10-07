@@ -33,3 +33,13 @@
     (is (nil? (validator {:name {}})))
     (is (not (empty? (get-in (validator {}) [:attrs :name]))))
     (is (not (empty? (get-in (validator {:cake 123}) [:attrs :name]))))))
+
+(deftest validate-inclusion
+  (let [validator (v/validator
+                   (v/validate-inclusion :type #{"is" "startsWith" "endsWith"}))]
+    (is (nil? (validator {:type "is"})))
+    (is (nil? (validator {:type "startsWith"})))
+    (is (nil? (validator {})))
+    (is (not (empty? (get-in (validator {:type "foo"}) [:attrs :type]))))
+    (is (not (empty? (get-in (validator {:type 123}) [:attrs :type]))))
+    (is (not (empty? (get-in (validator {:type "isis"}) [:attrs :type]))))))

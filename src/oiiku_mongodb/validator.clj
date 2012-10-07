@@ -65,6 +65,10 @@
     (if (not (contains? data attr))
       (attr-err attr "must be set"))))
 
+(defn- humanized-list
+  [list]
+  (apply str (interpose ", " list)))
+
 (defn validate-only-accept
   [& attrs]
   (let [attrs (set attrs)]
@@ -73,7 +77,14 @@
             extraneous-attrs (clojure.set/difference provided-attrs attrs)]
         (if (not (empty? extraneous-attrs))
           (base-err (str "Unknown attributes: "
-                         (apply str (interpose ", " (map name extraneous-attrs))))))))))
+                         (humanized-list (map name extraneous-attrs)))))))))
+
+(defn validate-inclusion
+  [attr accepted-values]
+  (fn [data]
+    (if-let [value (data attr)]
+      (if (not (contains? accepted-values value))
+        (attr-err attr (str"must be any of " (humanized-list accepted-values)))))))
 
 (defn- merge-base-errors
   [result error]

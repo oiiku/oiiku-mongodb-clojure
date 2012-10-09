@@ -1,3 +1,8 @@
+# HEAD (not yet tagged)
+
+* Rewrote validation library to support nested records. Validator functions now
+  return the full error spec instead of special partial formats.
+
 # 0.2.0
 
 * Bug fixes, yada yada.

@@ -144,6 +144,19 @@
     (updater db (inserted :_id) {:test 123})
     (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))
 
+(deftest upsert-inserts-when-document-does-not-exist
+  (let [upserter (db/make-upsert "my-coll")
+        finder (db/make-find-one "my-coll")
+        result (upserter db {:banan "sjokolade"} {:banan "sjokolade"})]
+    (is (not (monger.result/updated-existing? result)))))
+
+(deftest upsert-inserts-when-document-does-exists
+  (let [upserter (db/make-upsert "my-coll")
+        finder (db/make-find-one "my-coll")
+        result (upserter db {:banan "sjokolade"} {:banan "sjokolade"})]
+    (is (not (monger.result/updated-existing? result)))
+    (is (monger.result/updated-existing? (upserter db {:banan "sjokolade"} {:banan "smak"})))))
+
 (deftest save-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         saver (db/make-save-by-id "my-coll" (fn [data]))

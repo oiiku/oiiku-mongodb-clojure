@@ -1,15 +1,20 @@
 # oiiku-mongodb
 
-A collection of tools for working with MongoDB from Clojure.
+Warning: not battle proven! This is a very early preview release.
+
+A small wrapper on top of the Monger MongoDB library, for working with MongoDB from Clojure apps.
+
+Open sourced it after someone on the Clojure IRC channel wanted to see it. It's not currently in release quality (lack of documentation etc).
 
 ## Connecting
 
-We don't use the horrible global singleton of the underlying library. You need to create a connection and pass it to all database operations.
+We don't use the global singleton of the underlying library. You need to create a connection and pass it to all database operations.
 
-    (def connection (oiiku-mongodb.db/create-connection "name-of-database"))
+    (def db (oiiku-mongodb.db/create-db "name-of-database"))
 
 It's up to you to make this connection available so that you can pass it to your queries.
 
+We prefer a functional system that easily allows us to have multiple instances of our application in one process, for example. The default singleton of Monger makes that a bit cumbersome.
 
 ## Models
 
@@ -21,26 +26,37 @@ Models are modular. Here's an example of how to make a "model".
     (def insert (db/make-insert users" validator-fn-here))
     (def find-one (db/make/find-one "users"))
 
-A validator function is a function that returns nil, or an object that looks like this:
+The function `make-insert` returns a new function that takes two arguments: the database to work on (see previous section) and the data to insert. It will return `[true the-data]` if it is successfully inserted, and `[false validation-errors]` if not.
 
-    {:attrs {"some-attr" ["needs sauce" "can't be blank"]} :base ["Quota exceeded"]}
+TODO: Document all the functions.
 
-See separate section for an intro on how to easily create such validator functions.
-
-Note: Currently does not support separate validations for create and update. We'll probably need that so it'll probably be added once we implement some code that requires this feature.
+See more about validators below.
 
 
 ## Validation
 
 A toolkit for mixing smaller validation functions into an actual model validation function exists.
 
+TODO: Make this a separate package, the validation system is a generic data-in/data-out package.
+
     (require [oiiku-mongodb.validator :as v])
     
     (def validator
-      (v/make-validator
-        (v/validator-required "username")
-        (v/validator-required password")
+      (v/validator
+        (v/validate-presence :username)
+        (v/validate-presence :password)
         (fn [data]
-          ["some-attribute" "some error message"])
+          {:base ["An error message for the entire record"]}
         (fn [data]
-          "This error message is for the whole model, not a specific attr.")))
+          {:attr {:some-attr ["An error message for a specific attribute]}})))
+
+Validator functions can be any function, it does not have to be a `v/validator`. The only thing it needs to do is
+
+1. Take one argument, the data that is about to be inserted.
+2. Return an object of the type `{:attr {:some-attr ["errors on this attr"] :base ["Top-level error."]}}`.
+
+Errors on `:attr` are supposed to be for specific attribues (example: "cannot be blank"). Errors on `:base` is a list of top-level errors for no specific attribute (example: "Quota exceeded").
+
+It's important that you always follow this format. It's expected, and no internal validation is provided to ensure you are following it. If you don't follow it, you'll get undefined behaviour. For example, you have to always provide a list
+
+You can also nest these if you have nested data structures, in the form of `{:attr {:some-attr {:base ["Quota exceeded"] :attr {:foo ["has a nested error :("]}}}}`.

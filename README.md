@@ -6,6 +6,12 @@ A small wrapper on top of the Monger MongoDB library, for working with MongoDB f
 
 Open sourced it after someone on the Clojure IRC channel wanted to see it. It's not currently in release quality (lack of documentation etc).
 
+# Why it exists
+
+It allows for the creation of "models". Essentially, this library consists of a bunch of functions that takes a collection name and some options like validation function etc, and returns a new functoin that you actually use to work with MongoDB. This allows for the cration of models. See separate section on models.
+
+It also makes database operations completely functional, instead of using a hidden internal singleton to store it.
+
 ## Connecting
 
 We don't use the global singleton of the underlying library. You need to create a connection and pass it to all database operations.

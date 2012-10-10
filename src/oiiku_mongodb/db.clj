@@ -145,11 +145,18 @@
       (if-let [result (mc/find-one-as-map collection q)]
         result))))
 
+(defn make-find-all-with-fields
+ )
+
 (defn make-find-all
-  [collection]
-  (fn [db q]
-    (with-db db
-      (mc/find-maps collection q))))
+  ([collection]
+     (fn [db q]
+       (with-db db
+         (mc/find-maps collection q))))
+  ([collection fields]
+     (fn [db q fields]
+       (with-db db
+         (mc/find-maps collection q fields)))))
 
 (defn make-paginate
   [collection]

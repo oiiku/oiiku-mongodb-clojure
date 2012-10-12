@@ -98,10 +98,21 @@
   ([db collection data object-id]
      (perform-save db collection (assoc data :_id object-id))))
 
+(defn- perform-update
+  ([db collection criteria data]
+     (perform-update db collection criteria data false))
+  ([db collection criteria data upsert]
+     (with-db db
+       (mc/update collection criteria data :upsert upsert))))
+
+(defn make-update
+  [collection]
+  (fn [db criteria data]
+    (perform-update db collection criteria data)))
+
 (defn- perform-upsert
   [db collection criteria data]
-  (with-db db
-    (mc/update collection criteria data :upsert true)))
+  (perform-update db collection criteria data true))
 
 (defn make-upsert
   [collection]

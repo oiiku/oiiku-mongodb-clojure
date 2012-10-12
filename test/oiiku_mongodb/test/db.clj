@@ -1,7 +1,8 @@
 (ns oiiku-mongodb.test.db
   (:require [oiiku-mongodb.db :as db]
             oiiku-mongodb.test-helper)
-  (:use [clojure.test])
+  (:use clojure.test
+        monger.operators)
   (:import [org.bson.types ObjectId]))
 
 (def db (db/create-db "oiiku-mongodb-tests"))
@@ -143,7 +144,7 @@
 (deftest getting-name
   (is (= (db/get-db-name db) "oiiku-mongodb-tests")))
 
-(deftest updating
+(deftest updating-by-id
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         updater (db/make-update-by-id "my-coll")
         finder (db/make-find-one "my-coll")
@@ -152,6 +153,14 @@
     (is (= ((finder db {:_id (inserted :_id)}) :foo) "baz"))
     (updater db (inserted :_id) {:test 123})
     (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))
+
+(deftest updating-by-criteria
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        updater (db/make-update "my-coll")
+        finder (db/make-find-one "my-coll")
+        [_ inserted] (inserter db {:foo "bar"})
+        result (updater db {:foo "bar"} {$push {:banan "kake"}})]
+    (is (monger.result/updated-existing? result))))
 
 (deftest upsert-inserts-when-document-does-not-exist
   (let [upserter (db/make-upsert "my-coll")

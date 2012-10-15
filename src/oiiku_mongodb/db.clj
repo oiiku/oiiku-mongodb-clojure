@@ -183,9 +183,13 @@
 
 (defn make-count
   [collection]
-  (fn [db]
-    (with-db db
-      (mc/count collection))))
+  (defn inner-make-count
+    ([db]
+       (with-db db
+         (mc/count collection)))
+    ([db criteria]
+       (with-db db
+         (mc/count collection criteria)))))
 
 (defn make-delete
   [collection]

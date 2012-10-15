@@ -40,13 +40,23 @@
     (is (= (nth found 1) inserted-c))))
 
 (deftest find-all-with-output-filtering
-(let [inserter (db/make-insert "my-coll" (fn [data]))
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
         [result inserted-a] (inserter db {:name "Sten" :email "email@sten.no"})
         [result inserted-a] (inserter db {:name "Arne" :email "email@arne.no"})
         finder (db/make-find-all "my-coll" ["email"])
-      found (finder db {:name "Sten"} ["email"])]
+        found (finder db {:name "Sten"} ["email"])]
     (is (= (count found) 1))
     (is (= (first (remove #(= (key %) :_id) (first found))) [:email "email@sten.no"]))))
+
+(deftest count-whole-collection-and-by-criteria
+  (let [inserter (db/make-insert "my-coll" (fn [data]))
+        [result inserted-a] (inserter db {:name "Sten" :email "email@sten.no"})
+        [result inserted-a] (inserter db {:name "Arne" :email "email@arne.no"})
+        counter (db/make-count "my-coll")
+        the-whole-count (counter db)
+        the-criteria-count (counter db {:name "Sten"})]
+    (is (= the-whole-count 2))
+    (is (= the-criteria-count 1))))
 
 (deftest find-one-non-existing
   (let [finder (db/make-find-one "my-coll")

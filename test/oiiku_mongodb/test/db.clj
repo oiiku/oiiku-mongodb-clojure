@@ -233,6 +233,6 @@
     (try
       (inserter droppable-db {:hello "world"})
       (is (= 1 (counter droppable-db)))
-      (db/drop droppable-db)
+      (db/drop-database droppable-db)
       (is (= 0 (counter droppable-db)))
-      (finally (db/drop droppable-db)))))
+      (finally (db/drop-database droppable-db)))))

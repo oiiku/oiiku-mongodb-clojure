@@ -197,7 +197,7 @@
     (with-db db
       (mc/remove-by-id collection (oid id)))))
 
-(defn drop
+(defn drop-database
   [db]
   (.dropDatabase (:conn db) (get-db-name db)))
 

@@ -98,10 +98,21 @@
   ([db collection data object-id]
      (perform-save db collection (assoc data :_id object-id))))
 
+(defn- perform-update
+  ([db collection criteria data]
+     (perform-update db collection criteria data false))
+  ([db collection criteria data upsert]
+     (with-db db
+       (mc/update collection criteria data :upsert upsert))))
+
+(defn make-update
+  [collection]
+  (fn [db criteria data]
+    (perform-update db collection criteria data)))
+
 (defn- perform-upsert
   [db collection criteria data]
-  (with-db db
-    (mc/update collection criteria data :upsert true)))
+  (perform-update db collection criteria data true))
 
 (defn make-upsert
   [collection]
@@ -145,11 +156,18 @@
       (if-let [result (mc/find-one-as-map collection q)]
         result))))
 
+(defn make-find-all-with-fields
+ )
+
 (defn make-find-all
-  [collection]
-  (fn [db q]
-    (with-db db
-      (mc/find-maps collection q))))
+  ([collection]
+     (fn [db q]
+       (with-db db
+         (mc/find-maps collection q))))
+  ([collection fields]
+     (fn [db q fields]
+       (with-db db
+         (mc/find-maps collection q fields)))))
 
 (defn make-paginate
   [collection]
@@ -165,9 +183,13 @@
 
 (defn make-count
   [collection]
-  (fn [db]
-    (with-db db
-      (mc/count collection))))
+  (defn inner-make-count
+    ([db]
+       (with-db db
+         (mc/count collection)))
+    ([db criteria]
+       (with-db db
+         (mc/count collection criteria)))))
 
 (defn make-delete
   [collection]

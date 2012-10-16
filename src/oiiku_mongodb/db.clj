@@ -175,6 +175,10 @@
     (with-db db
       (mc/remove-by-id collection (oid id)))))
 
+(defn drop
+  [db]
+  (.dropDatabase (:conn db) (get-db-name db)))
+
 (defn if-valid-oid
   "Executes 'then' if oid is valid. Executes 'else' if oid is invalid or
    'then' returns a falsy value."

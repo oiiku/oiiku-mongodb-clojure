@@ -197,3 +197,14 @@
               (fn [object-id])
               (fn [] "nope" ))]
     (is (= result "nope"))))
+
+(deftest dropping
+  (let [droppable-db (db/create-db "oiiku-mongodb-tests-dropping-test")
+        inserter (db/make-insert "foos" (fn [data]))
+        counter (db/make-count "foos")]
+    (try
+      (inserter droppable-db {:hello "world"})
+      (is (= 1 (counter droppable-db)))
+      (db/drop droppable-db)
+      (is (= 0 (counter droppable-db)))
+      (finally (db/drop droppable-db)))))

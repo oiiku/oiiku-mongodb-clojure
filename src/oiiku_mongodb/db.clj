@@ -156,9 +156,6 @@
       (if-let [result (mc/find-one-as-map collection q)]
         result))))
 
-(defn make-find-all-with-fields
- )
-
 (defn make-find-all
   ([collection]
      (fn [db q]

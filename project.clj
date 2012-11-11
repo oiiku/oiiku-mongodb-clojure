@@ -1,5 +1,6 @@
 (defproject oiiku-mongodb "0.3.0-SNAPSHOT"
   :description "Common utils for MongoDB"
+  :license {:name "New BSD license"}
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [com.novemberain/monger "1.1.0"]
                  [bultitude "0.1.7"]]

@@ -29,8 +29,8 @@ Models are modular. Here's an example of how to make a "model".
     (ns myapp.models.user
       (:require [oiiku-mongodb.db :as db]))
     
-    (def insert (db/make-insert users" validator-fn-here))
-    (def find-one (db/make/find-one "users"))
+    (def insert (db/make-insert "users" validator-fn-here))
+    (def find-one (db/make-find-one "users"))
 
 The function `make-insert` returns a new function that takes two arguments: the database to work on (see previous section) and the data to insert. It will return `[true the-data]` if it is successfully inserted, and `[false validation-errors]` if not.
 

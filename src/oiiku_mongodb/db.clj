@@ -136,10 +136,9 @@
      (make-save-by-id collection validator identity-processor))
   ([collection validator processor]
      (fn [db id data]
-       (with-db db
-         (with-validate validator data
-           (fn []
-             [true (perform-save db collection (processor data) (oid id))]))))))
+       (with-validate validator data
+         (fn []
+           [true (perform-save db collection (processor data) (oid id))])))))
 
 (defn make-update-by-id
   "For now we don't provide validations and processors here. It's only being

@@ -78,13 +78,6 @@
       (dissoc :_id)
       stringify-oids))
 
-(defn- with-validate
-  [validator data handler]
-  (let [errors (validator data)]
-    (if (empty? errors)
-      (handler)
-      [false errors])))
-
 (def ^:private identity-processor (fn [data] data))
 
 (defn- perform-save
@@ -120,29 +113,27 @@
     (perform-upsert db collection criteria data)))
 
 (defn make-insert
-  ([collection validator]
-     (make-insert collection validator identity-processor))
-  ([collection validator processor]
+  ([collection]
+     (make-insert collection identity-processor))
+  ([collection processor]
      (fn [db data]
-       (with-validate validator data
-         (fn []
-           (try
-             [true (perform-save db collection (processor data))]
-             (catch com.mongodb.MongoException$DuplicateKey e
-               [false {:base ["Duplicate value not allowed"]}])))))))
+       (perform-save db collection (processor data)))))
+
+(defmacro duplicate-key-guard
+  [& body]
+  `(try
+     (do ~@body)
+     (catch com.mongodb.MongoException$DuplicateKey e#
+       ::duplicate-key)))
 
 (defn make-save-by-id
-  ([collection validator]
-     (make-save-by-id collection validator identity-processor))
-  ([collection validator processor]
+  ([collection]
+     (make-save-by-id collection identity-processor))
+  ([collection processor]
      (fn [db id data]
-       (with-validate validator data
-         (fn []
-           [true (perform-save db collection (processor data) (oid id))])))))
+       (perform-save db collection (processor data) (oid id)))))
 
 (defn make-update-by-id
-  "For now we don't provide validations and processors here. It's only being
-   used for internal updating that doesn't take user input."
   [collection]
   (fn [db id data]
     (with-db db

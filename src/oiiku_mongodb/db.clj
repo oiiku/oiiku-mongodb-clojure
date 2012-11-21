@@ -7,6 +7,24 @@
             clojure.walk)
   (:import [org.bson.types ObjectId]))
 
+(defmacro when-valid
+  "Takes two arguments: a statement that returns nil or any kind of truthy
+   error message, and a statement that performs database insertion.
+
+   Returns [true {data ...}] or [false {validation errors ...}].
+
+   Example:
+
+     (def insert
+       (let [inserter-fn (db/make-insert \"users\")]
+         (fn [db data]
+           (when-valid (validator data)
+                       (inserter-fn db data)))))"
+  [validate do-db]
+  `(if-let [errors# ~validate]
+     [false errors#]
+     [true ~do-db]))
+
 (defmacro
   ^{:private true}
   with-db

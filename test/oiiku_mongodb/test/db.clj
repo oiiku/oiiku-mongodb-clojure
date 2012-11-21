@@ -100,14 +100,6 @@
     (is (= (count found) 1))
     (is (= (nth found 0) inserted-b))))
 
-(deftest processing-on-insert
-  (let [inserter (db/make-insert
-                  "my-coll"
-                  (fn [data] (assoc data :otherfoo (str (data :foo) "test"))))
-        inserted (inserter db {:foo "bar"})]
-    (is (= (inserted :otherfoo) "bartest"))
-    (is (contains? inserted :_id))))
-
 (deftest serializing
   (let [oid-a (ObjectId.)
         oid-b (ObjectId.)
@@ -170,14 +162,6 @@
         inserted (inserter db {:foo "bar"})
         updated (saver db (inserted :_id) {:bar "baz"})]
     (is (= updated {:bar "baz" :_id (inserted :_id)}))))
-
-(deftest save-by-id-with-processor
-  (let [inserter (db/make-insert "my-coll")
-        saver (db/make-save-by-id "my-coll"
-                                  (fn [data] {:bar "baz" :foo (data :foo)}))
-        inserted (inserter db {})
-        updated (saver db (inserted :_id) {:foo "bar"})]
-    (is (= updated {:foo "bar" :bar "baz" :_id (inserted :_id)}))))
 
 (deftest if-valid-oid-oid-is-valid
   (let [oid (ObjectId.)

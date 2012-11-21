@@ -78,8 +78,6 @@
       (dissoc :_id)
       stringify-oids))
 
-(def ^:private identity-processor (fn [data] data))
-
 (defn- perform-save
   "Will save (create or update/replace) a document, depending on whether
    or not an id is passed. Returns the result with the attributes as symbols,
@@ -113,11 +111,9 @@
     (perform-upsert db collection criteria data)))
 
 (defn make-insert
-  ([collection]
-     (make-insert collection identity-processor))
-  ([collection processor]
-     (fn [db data]
-       (perform-save db collection (processor data)))))
+  [collection]
+  (fn [db data]
+    (perform-save db collection data)))
 
 (defmacro duplicate-key-guard
   [& body]
@@ -127,11 +123,9 @@
        ::duplicate-key)))
 
 (defn make-save-by-id
-  ([collection]
-     (make-save-by-id collection identity-processor))
-  ([collection processor]
-     (fn [db id data]
-       (perform-save db collection (processor data) (oid id)))))
+  [collection]
+  (fn [db id data]
+    (perform-save db collection data (oid id))))
 
 (defn make-update-by-id
   [collection]

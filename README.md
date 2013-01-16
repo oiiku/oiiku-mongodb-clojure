@@ -29,8 +29,8 @@ Models are modular. Here's an example of how to make a "model".
     (ns myapp.models.user
       (:require [oiiku-mongodb.db :as db]))
     
-    (def insert (db/make-insert users" validator-fn-here))
-    (def find-one (db/make/find-one "users"))
+    (def insert (db/make-insert "users" validator-fn-here))
+    (def find-one (db/make-find-one "users"))
 
 The function `make-insert` returns a new function that takes two arguments: the database to work on (see previous section) and the data to insert. It will return `[true the-data]` if it is successfully inserted, and `[false validation-errors]` if not.
 
@@ -41,28 +41,6 @@ See more about validators below.
 
 ## Validation
 
-A toolkit for mixing smaller validation functions into an actual model validation function exists.
+Some of the factories takes a validator. The validator is any function that takes the provided data as input. If the function returns something falsy, validation passes. If not, the data returned from the function is used as the error data.
 
-TODO: Make this a separate package, the validation system is a generic data-in/data-out package.
-
-    (require [oiiku-mongodb.validator :as v])
-    
-    (def validator
-      (v/validator
-        (v/validate-presence :username)
-        (v/validate-presence :password)
-        (fn [data]
-          {:base ["An error message for the entire record"]}
-        (fn [data]
-          {:attr {:some-attr ["An error message for a specific attribute]}})))
-
-Validator functions can be any function, it does not have to be a `v/validator`. The only thing it needs to do is
-
-1. Take one argument, the data that is about to be inserted.
-2. Return an object of the type `{:attr {:some-attr ["errors on this attr"] :base ["Top-level error."]}}`.
-
-Errors on `:attr` are supposed to be for specific attribues (example: "cannot be blank"). Errors on `:base` is a list of top-level errors for no specific attribute (example: "Quota exceeded").
-
-It's important that you always follow this format. It's expected, and no internal validation is provided to ensure you are following it. If you don't follow it, you'll get undefined behaviour. For example, you have to always provide a list
-
-You can also nest these if you have nested data structures, in the form of `{:attr {:some-attr {:base ["Quota exceeded"] :attr {:foo ["has a nested error :("]}}}}`.
+You can use any validation library you want, such as [Validateur](http://clojurevalidations.info/) or our own [oiiku-data-validator](https://github.com/oiiku/oiiku-data-validation).

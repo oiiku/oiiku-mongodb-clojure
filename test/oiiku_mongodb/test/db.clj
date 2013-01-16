@@ -14,24 +14,23 @@
    (f)))
 
 (deftest inserting
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter db {:foo "bar"})]
-    (is result)
+  (let [inserter (db/make-insert "my-coll")
+        inserted (inserter db {:foo "bar"})]
     (is (= (inserted :foo) "bar"))
     (is (contains? inserted :_id))))
 
 (deftest find-one
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter db {:foo "bar"})
+  (let [inserter (db/make-insert "my-coll")
+        inserted (inserter db {:foo "bar"})
         finder (db/make-find-one "my-coll")
         found (finder db {:foo "bar"})]
     (is (= inserted found))))
 
 (deftest find-all
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter db {:foo "bar"})
-        [result inserted-b] (inserter db {:foo "baz"})
-        [result inserted-c] (inserter db {:foo "bar"})
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {:foo "bar"})
+        inserted-b (inserter db {:foo "baz"})
+        inserted-c (inserter db {:foo "bar"})
         finder (db/make-find-all "my-coll")
         found (finder db {:foo "bar"})]
     (is (= (count found) 2))
@@ -40,18 +39,18 @@
     (is (= (nth found 1) inserted-c))))
 
 (deftest find-all-with-output-filtering
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter db {:name "Sten" :email "email@sten.no"})
-        [result inserted-a] (inserter db {:name "Arne" :email "email@arne.no"})
-        finder (db/make-find-all-with-output-filter "my-coll")
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {:name "Sten" :email "email@sten.no"})
+        inserted-a (inserter db {:name "Arne" :email "email@arne.no"})
+        finder (db/make-find-all "my-coll" ["email"])
         found (finder db {:name "Sten"} ["email"])]
     (is (= (count found) 1))
     (is (= (first (remove #(= (key %) :_id) (first found))) [:email "email@sten.no"]))))
 
 (deftest count-whole-collection-and-by-criteria
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter db {:name "Sten" :email "email@sten.no"})
-        [result inserted-a] (inserter db {:name "Arne" :email "email@arne.no"})
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {:name "Sten" :email "email@sten.no"})
+        inserted-a (inserter db {:name "Arne" :email "email@arne.no"})
         counter (db/make-count "my-coll")
         the-whole-count (counter db)
         the-criteria-count (counter db {:name "Sten"})]
@@ -64,8 +63,8 @@
     (is (nil? found))))
 
 (deftest deleting
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter db {:foo "bar"})
+  (let [inserter (db/make-insert "my-coll")
+        inserted (inserter db {:foo "bar"})
         deleter (db/make-delete "my-coll")]
     (deleter db (inserted :_id))
     (let [finder (db/make-find-one "my-coll")
@@ -73,17 +72,17 @@
       (is (nil? found)))))
 
 (deftest querying-by-id
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter db {:foo "bar"})
+  (let [inserter (db/make-insert "my-coll")
+        inserted (inserter db {:foo "bar"})
         finder (db/make-find-one "my-coll")
         found (finder db {:_id (inserted :_id)})]
     (is (= inserted found))))
 
 (deftest querying-in-by-id
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter db {})
-        [result inserted-b] (inserter db {})
-        [result inserted-c] (inserter db {})
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {})
+        inserted-b (inserter db {})
+        inserted-c (inserter db {})
         finder (db/make-find-all "my-coll")
         found (finder db {:_id {:$in [(inserted-a :_id) (inserted-c :_id)]}})]
     (is (= (count found) 2))
@@ -92,40 +91,14 @@
     (is (= (nth found 1) inserted-c))))
 
 (deftest querying-ne-by-id
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted-a] (inserter db {})
-        [result inserted-b] (inserter db {})
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {})
+        inserted-b (inserter db {})
         finder (db/make-find-all "my-coll")
         found (finder db {:_id {:$ne (inserted-a :_id)}})
         ]
     (is (= (count found) 1))
     (is (= (nth found 0) inserted-b))))
-
-(deftest failing-validation-with-errors
-  (let [inserter (db/make-insert
-                  "my-coll"
-                  (fn [data] {:attrs [(str "test" (data :foo))]}))
-        [result inserted] (inserter db {:foo "bar"})]
-    (is (not result))
-    (is (= inserted {:attrs ["testbar"]}))))
-
-(deftest validator-gets-attrs-with-stringified-keys
-  (let [inserter (db/make-insert
-                  "my-coll"
-                  (fn [data] {:attrs [(str "test" (data :foo))]}))
-        [result inserted] (inserter db {:foo "bar"})]
-    (is (not result))
-    (is (= inserted {:attrs ["testbar"]}))))
-
-(deftest processing-on-insert
-  (let [inserter (db/make-insert
-                  "my-coll"
-                  (fn [data])
-                  (fn [data] (assoc data :otherfoo (str (data :foo) "test"))))
-        [result inserted] (inserter db {:foo "bar"})]
-    (is result)
-    (is (= (inserted :otherfoo) "bartest"))
-    (is (contains? inserted :_id))))
 
 (deftest serializing
   (let [oid-a (ObjectId.)
@@ -138,37 +111,35 @@
                 :foo "bar"}))))
 
 (deftest nested-map-with-string-keys
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result inserted] (inserter db {:foo {"test" 123}})]
-    (is result)
+  (let [inserter (db/make-insert "my-coll")
+        inserted (inserter db {:foo {"test" 123}})]
     (is (= (inserted :foo) {"test" 123}))))
 
 (deftest perform-ensure-index
   (db/perform-ensure-index db {"my-coll" [{:foo 1} {:unique true}]})
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        [result-a inserted-a] (inserter db {:foo "test"})
-        [result-b inserted-b] (inserter db {:foo "test"})]
-    (is result-a)
-    (is (not result-b))))
+  (let [inserter (db/make-insert "my-coll")
+        inserted-a (inserter db {:foo "test"})
+        inserted-b (db/duplicate-key-guard (inserter db {:foo "test"}))]
+    (is (= (inserted-b :db/duplicate-key)))))
 
 (deftest getting-name
   (is (= (db/get-db-name db) "oiiku-mongodb-tests")))
 
 (deftest updating-by-id
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
+  (let [inserter (db/make-insert "my-coll")
         updater (db/make-update-by-id "my-coll")
         finder (db/make-find-one "my-coll")
-        [valid inserted] (inserter db {:foo "bar"})]
+        inserted (inserter db {:foo "bar"})]
     (updater db (inserted :_id) {:foo "baz"})
     (is (= ((finder db {:_id (inserted :_id)}) :foo) "baz"))
     (updater db (inserted :_id) {:test 123})
     (is (= ((finder db {:_id (inserted :_id)}) :test) 123))))
 
 (deftest updating-by-criteria
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
+  (let [inserter (db/make-insert "my-coll")
         updater (db/make-update "my-coll")
         finder (db/make-find-one "my-coll")
-        [_ inserted] (inserter db {:foo "bar"})
+        inserted (inserter db {:foo "bar"})
         result (updater db {:foo "bar"} {$push {:banan "kake"}})]
     (is (monger.result/updated-existing? result))))
 
@@ -186,22 +157,11 @@
     (is (monger.result/updated-existing? (upserter db {:banan "sjokolade"} {:banan "smak"})))))
 
 (deftest save-by-id
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        saver (db/make-save-by-id "my-coll" (fn [data]))
-        [valid inserted] (inserter db {:foo "bar"})
-        [valid updated] (saver db (inserted :_id) {:bar "baz"})]
-    (is (= valid true))
+  (let [inserter (db/make-insert "my-coll")
+        saver (db/make-save-by-id "my-coll")
+        inserted (inserter db {:foo "bar"})
+        updated (saver db (inserted :_id) {:bar "baz"})]
     (is (= updated {:bar "baz" :_id (inserted :_id)}))))
-
-(deftest save-by-id-with-processor
-  (let [inserter (db/make-insert "my-coll" (fn [data]))
-        saver (db/make-save-by-id "my-coll"
-                                  (fn [data])
-                                  (fn [data] {:bar "baz" :foo (data :foo)}))
-        [valid inserted] (inserter db {})
-        [valid updated] (saver db (inserted :_id) {:foo "bar"})]
-    (is (= valid true))
-    (is (= updated {:foo "bar" :bar "baz" :_id (inserted :_id)}))))
 
 (deftest if-valid-oid-oid-is-valid
   (let [oid (ObjectId.)
@@ -228,7 +188,7 @@
 
 (deftest dropping
   (let [droppable-db (db/create-db "oiiku-mongodb-tests-dropping-test")
-        inserter (db/make-insert "foos" (fn [data]))
+        inserter (db/make-insert "foos")
         counter (db/make-count "foos")]
     (try
       (inserter droppable-db {:hello "world"})

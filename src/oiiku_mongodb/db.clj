@@ -7,6 +7,24 @@
             clojure.walk)
   (:import [org.bson.types ObjectId]))
 
+(defmacro when-valid
+  "Takes two arguments: a statement that returns nil or any kind of truthy
+   error message, and a statement that performs database insertion.
+
+   Returns [true {data ...}] or [false {validation errors ...}].
+
+   Example:
+
+     (def insert
+       (let [inserter-fn (db/make-insert \"users\")]
+         (fn [db data]
+           (when-valid (validator data)
+                       (inserter-fn db data)))))"
+  [validate do-db]
+  `(if-let [errors# ~validate]
+     [false errors#]
+     [true ~do-db]))
+
 (defmacro
   ^{:private true}
   with-db
@@ -78,15 +96,6 @@
       (dissoc :_id)
       stringify-oids))
 
-(defn- with-validate
-  [validator data handler]
-  (let [errors (validator data)]
-    (if (empty? errors)
-      (handler)
-      [false errors])))
-
-(def ^:private identity-processor (fn [data] data))
-
 (defn- perform-save
   "Will save (create or update/replace) a document, depending on whether
    or not an id is passed. Returns the result with the attributes as symbols,
@@ -120,30 +129,23 @@
     (perform-upsert db collection criteria data)))
 
 (defn make-insert
-  ([collection validator]
-     (make-insert collection validator identity-processor))
-  ([collection validator processor]
-     (fn [db data]
-       (with-validate validator data
-         (fn []
-           (try
-             [true (perform-save db collection (processor data))]
-             (catch com.mongodb.MongoException$DuplicateKey e
-               [false {:base ["Duplicate value not allowed"]}])))))))
+  [collection]
+  (fn [db data]
+    (perform-save db collection data)))
+
+(defmacro duplicate-key-guard
+  [& body]
+  `(try
+     (do ~@body)
+     (catch com.mongodb.MongoException$DuplicateKey e#
+       ::duplicate-key)))
 
 (defn make-save-by-id
-  ([collection validator]
-     (make-save-by-id collection validator identity-processor))
-  ([collection validator processor]
-     (fn [db id data]
-       (with-db db
-         (with-validate validator data
-           (fn []
-             [true (perform-save db collection (processor data) (oid id))]))))))
+  [collection]
+  (fn [db id data]
+    (perform-save db collection data (oid id))))
 
 (defn make-update-by-id
-  "For now we don't provide validations and processors here. It's only being
-   used for internal updating that doesn't take user input."
   [collection]
   (fn [db id data]
     (with-db db

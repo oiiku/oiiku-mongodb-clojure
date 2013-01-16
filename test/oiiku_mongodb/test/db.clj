@@ -43,7 +43,7 @@
   (let [inserter (db/make-insert "my-coll" (fn [data]))
         [result inserted-a] (inserter db {:name "Sten" :email "email@sten.no"})
         [result inserted-a] (inserter db {:name "Arne" :email "email@arne.no"})
-        finder (db/make-find-all "my-coll" ["email"])
+        finder (db/make-find-all-with-output-filter "my-coll")
         found (finder db {:name "Sten"} ["email"])]
     (is (= (count found) 1))
     (is (= (first (remove #(= (key %) :_id) (first found))) [:email "email@sten.no"]))))

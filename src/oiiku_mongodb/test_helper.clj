@@ -10,7 +10,6 @@
   (doseq [coll-name (remove
                      (fn [coll-name]
                        (re-find #"system" coll-name))
-                     (.toArray (.getCollectionNames (:db db))))]
+                     (.toArray (.getCollectionNames db)))]
     (monger.core/with-connection (:conn db)
-      (monger.core/with-db (:db db)
-        (monger.collection/drop coll-name)))))
+        (monger.multi.collection/drop db coll-name))))

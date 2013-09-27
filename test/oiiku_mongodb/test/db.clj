@@ -1,5 +1,6 @@
 (ns oiiku-mongodb.test.db
   (:require [oiiku-mongodb.db :as db]
+            [monger.core :as mc]
             oiiku-mongodb.test-helper)
   (:use clojure.test
         monger.operators)

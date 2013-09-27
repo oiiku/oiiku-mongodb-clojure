@@ -1,6 +1,6 @@
 (ns oiiku-mongodb.db
   (:require [monger.core :as mg]
-            [monger.collection :as mc]
+            [monger.multi.collection :as mc]
             [monger.query :as mq]
             monger.conversion
             bultitude.core
@@ -25,28 +25,17 @@
      [false errors#]
      [true ~do-db]))
 
-(defmacro
-  ^{:private true}
-  with-db
-  [db & body]
-  `(mg/with-connection (:conn ~db)
-     (mg/with-db (:db ~db)
-       (do ~@body))))
-
-(defrecord Db [conn db])
-
 (defn create-db
   ([db-name]
-     (create-db db-name {}))
+    (create-db db-name {}))
   ([db-name & opts]
-     (let [conn (apply monger.core/connect opts)
-           db (mg/get-db conn db-name)]
-       (Db. conn db))))
+    (let [conn (apply monger.core/connect opts)]
+      (mg/get-db conn db-name))))
 
 (defn get-db-name
   "Takes a create-db object and returns the name of its database."
   [db]
-  (.getName (:db db)))
+  (.getName db))
 
 (defmulti oid type)
 (defmethod oid String [id]
@@ -56,12 +45,12 @@
 
 (defn perform-ensure-index
   [db all]
-  (with-db db
-    (doseq [[collection indexes] all]
-      (mc/ensure-index
-       collection
-       (nth indexes 0)
-       (nth indexes 1 {})))))
+  (doseq [[collection indexes] all]
+    (mc/ensure-index
+      db
+      collection
+      (nth indexes 0)
+      (nth indexes 1 {}))))
 
 (defn ensure-indexes
   "Creates indexes if they don't exist, by looking for an 'indexes' var
@@ -101,18 +90,16 @@
    or not an id is passed. Returns the result with the attributes as symbols,
    not strings."
   ([db collection data]
-     (with-db db
-       (let [record (mc/save-and-return collection data)]
-         (zipmap (map keyword (keys record)) (vals record)))))
+    (let [record (mc/save-and-return db collection data)]
+      (zipmap (map keyword (keys record)) (vals record))))
   ([db collection data object-id]
-     (perform-save db collection (assoc data :_id object-id))))
+    (perform-save db collection (assoc data :_id object-id))))
 
 (defn- perform-update
   ([db collection criteria data]
-     (perform-update db collection criteria data false))
+    (perform-update db collection criteria data false))
   ([db collection criteria data upsert]
-     (with-db db
-       (mc/update collection criteria data :upsert upsert))))
+    (mc/update db collection criteria data :upsert upsert)))
 
 (defn make-update
   [collection]
@@ -148,59 +135,51 @@
 (defn make-update-by-id
   [collection]
   (fn [db id data]
-    (with-db db
-      (mc/update-by-id collection id data))))
+    (mc/update-by-id db collection id data)))
 
 (defn make-find-one
   [collection]
   (fn [db q]
-    (with-db db
-      (if-let [result (mc/find-one-as-map collection q)]
-        result))))
+    (if-let [result (mc/find-one-as-map db collection q)]
+      result)))
 
 (defn make-find-all
   [collection]
   (fn [db q]
-    (with-db db
-      (mc/find-maps collection q))))
+    (mc/find-maps db collection q)))
 
 (defn make-find-all-with-output-filter
   [collection]
   (fn [db q fields]
-    (with-db db
-      (mc/find-maps collection q fields))))
+    (mc/find-maps db collection q fields)))
 
 (defn make-paginate
   [collection]
   (fn [db query limit offset]
-    (with-db db
-      (let [count (mc/count collection query)
-            documents (mq/with-collection collection
-                        (mq/find query)
-                        (mq/limit limit)
-                        (mq/skip offset))]
-        {:count count
-         :documents documents}))))
+    (let [count (mc/count db collection query)
+          documents (mq/with-collection collection
+                      (mq/find query)
+                      (mq/limit limit)
+                      (mq/skip offset))]
+      {:count count
+       :documents documents})))
 
 (defn make-count
   [collection]
   (defn inner-make-count
     ([db]
-       (with-db db
-         (mc/count collection)))
+      (mc/count db collection))
     ([db criteria]
-       (with-db db
-         (mc/count collection criteria)))))
+      (mc/count db collection criteria))))
 
 (defn make-delete
   [collection]
   (fn [db id]
-    (with-db db
-      (mc/remove-by-id collection (oid id)))))
+    (mc/remove-by-id db collection (oid id))))
 
 (defn drop-database
   [db]
-  (.dropDatabase (:conn db) (get-db-name db)))
+  (.dropDatabase db))
 
 (defn if-valid-oid
   "Executes 'then' if oid is valid. Executes 'else' if oid is invalid or
